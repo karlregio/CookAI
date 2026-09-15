@@ -2,25 +2,82 @@
 //  AppRouter.swift
 //  CookAI
 //
-//  App-wide navigation/session state. Grows into full screen routing as more
-//  screens are added; for now it just tracks the signed-in user so RootView
-//  can react to auth state changes.
+//  App-wide navigation state: which phase the app is in (splash/auth/main),
+//  which tab is active, and each tab's own push-navigation stack. Auth
+//  business logic itself lives in AuthController — this router only reacts
+//  to phase transitions.
 //
 
 import Observation
 
+enum AppPhase {
+    case splash
+    case auth
+    case main
+}
+
+enum Tab: String, CaseIterable, Hashable {
+    case home
+    case saved
+    case grocery
+    case history
+    case profile
+
+    var title: String {
+        switch self {
+        case .home: return "Home"
+        case .saved: return "Saved"
+        case .grocery: return "Grocery"
+        case .history: return "History"
+        case .profile: return "Profile"
+        }
+    }
+}
+
+/// Typed push destinations. Each tab owns its own array of these, so the tab
+/// bar can hide itself whenever the active tab's stack is non-empty, mirroring
+/// the prototype's single-screen-swap navigation.
+enum Route: Hashable {
+    case recipeOverview(Recipe)
+    case aiGenerate
+    case cookMode(Recipe)
+    case notifications
+    case conversations
+    case comingSoon(title: String)
+}
+
 @Observable
 final class AppRouter {
-    private(set) var currentUser: User?
+    var phase: AppPhase = .splash
+    var selectedTab: Tab = .home
+    var paths: [Tab: [Route]] = Dictionary(uniqueKeysWithValues: Tab.allCases.map { ($0, []) })
 
-    private let authService: AuthService
-
-    init(services: ServiceContainer = .shared) {
-        self.authService = services.authService
-        self.currentUser = services.authService.currentUser
+    func finishSplash() {
+        phase = .auth
     }
 
-    func refreshSession() {
-        currentUser = authService.currentUser
+    func completeSignIn() {
+        selectedTab = .home
+        phase = .main
+    }
+
+    func signOut() {
+        for tab in Tab.allCases {
+            paths[tab] = []
+        }
+        selectedTab = .home
+        phase = .auth
+    }
+
+    func push(_ route: Route, in tab: Tab? = nil) {
+        let target = tab ?? selectedTab
+        paths[target, default: []].append(route)
+    }
+
+    func pop(in tab: Tab? = nil) {
+        let target = tab ?? selectedTab
+        guard var path = paths[target], !path.isEmpty else { return }
+        path.removeLast()
+        paths[target] = path
     }
 }
