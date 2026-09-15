@@ -24,7 +24,7 @@ protocol RecipeRepository: AnyObject {
     func fetchHistory() async throws -> [CookHistoryEntry]
     func addHistoryEntry(_ entry: CookHistoryEntry) async throws
     func fetchComments(recipeId: UUID) async throws -> [RecipeComment]
-    func addComment(recipeId: UUID, text: String) async throws -> RecipeComment
+    func addComment(recipeId: UUID, authorId: UUID, text: String) async throws -> RecipeComment
 }
 
 enum RecipeRepositoryError: LocalizedError {
@@ -142,9 +142,9 @@ final class MockRecipeRepository: RecipeRepository {
         return commentsByRecipe[recipeId] ?? []
     }
 
-    func addComment(recipeId: UUID, text: String) async throws -> RecipeComment {
+    func addComment(recipeId: UUID, authorId: UUID, text: String) async throws -> RecipeComment {
         try await simulateNetworkDelay()
-        let comment = RecipeComment(id: UUID(), recipeId: recipeId, authorId: MockData.alexUser.id, text: text, createdAt: Date())
+        let comment = RecipeComment(id: UUID(), recipeId: recipeId, authorId: authorId, text: text, createdAt: Date())
         commentsByRecipe[recipeId, default: []].append(comment)
         return comment
     }

@@ -2,12 +2,12 @@
 //  LoginScreen.swift
 //  CookAI
 //
-//  Replicates the prototype's LoginScreen (App.tsx ~lines 3458–3634): warm
-//  gradient header band, login/sign-up mode switch, email/password fields
-//  with show/hide toggle, "Forgot password?", prototype quick-fill tips, and
-//  "Continue as Guest". Deviates from the prototype in one place on purpose:
-//  submitting with empty fields shows an inline validation message instead
-//  of silently doing nothing.
+//  Visual layout ported from the prototype's LoginScreen (App.tsx ~lines
+//  3458–3634): warm gradient header band, login/sign-up mode switch,
+//  email/password fields with show/hide toggle, "Forgot password?", and
+//  "Continue as Guest". Per PROJECT_RULES.md, the prototype's demo-only
+//  "quick-fill" buttons were not ported, and submitting with empty fields
+//  shows an inline validation message instead of silently doing nothing.
 //
 
 import SwiftUI
@@ -81,17 +81,14 @@ struct LoginScreen: View {
                 .padding(.bottom, 24)
 
             fields
-                .padding(.bottom, validationMessage == nil ? 16 : 8)
+                .padding(.bottom, validationMessage == nil ? 28 : 8)
 
             if let validationMessage {
                 Text(validationMessage)
                     .font(.outfit(size: 12, weight: .medium))
                     .foregroundStyle(Color.terracottaDark)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 16)
             }
-
-            prototypeTip
-                .padding(.bottom, 20)
 
             primaryButton
                 .padding(.bottom, 24)
@@ -106,7 +103,7 @@ struct LoginScreen: View {
         VStack(spacing: 16) {
             if mode == .signUp {
                 labeledField(label: "Your name") {
-                    TextField("Alex Rivera", text: $name)
+                    TextField("Enter your full name", text: $name)
                         .focused($focusedField, equals: .name)
                 }
             }
@@ -124,12 +121,11 @@ struct LoginScreen: View {
                 HStack(spacing: 8) {
                     Group {
                         if showPassword {
-                            TextField("••••••••", text: $password)
+                            TextField("Enter your password", text: $password)
                         } else {
-                            SecureField("••••••••", text: $password)
+                            SecureField("Enter your password", text: $password)
                         }
                     }
-                    .tint(Color.charcoal)
                     .focused($focusedField, equals: .password)
                     .onSubmit { Task { await submit() } }
 
@@ -200,60 +196,6 @@ struct LoginScreen: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .background(isActive ? Color.terracotta : Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Prototype tip
-
-    private var prototypeTipText: AttributedString {
-        var label = AttributedString("Prototype tip: ")
-        label.font = .outfit(size: 11, weight: .semibold)
-        label.foregroundColor = Color.sage
-
-        var body = AttributedString("Any password works. Tap a quick-fill below:")
-        body.font = .outfit(size: 11)
-        body.foregroundColor = Color.charcoalMid
-
-        label.append(body)
-        return label
-    }
-
-    private var prototypeTip: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(prototypeTipText)
-
-            HStack(spacing: 8) {
-                quickFillButton(title: "🛡 Fill Admin", tint: .terracotta) {
-                    email = "admin@cookai.com"
-                    password = "admin123"
-                    mode = .login
-                    validationMessage = nil
-                }
-                quickFillButton(title: "👤 Fill User", tint: .sage) {
-                    email = "alex@example.com"
-                    password = "hello123"
-                    mode = .login
-                    validationMessage = nil
-                }
-            }
-        }
-        .padding(12)
-        .background(Color.sage.opacity(0.08))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.sage.opacity(0.2), lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    private func quickFillButton(title: String, tint: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.outfit(size: 11, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-                .background(tint.opacity(0.12))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(tint.opacity(0.25), lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
     }
