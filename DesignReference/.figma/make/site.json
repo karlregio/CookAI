@@ -1,0 +1,10 @@
+{
+  "description": "CookAI is an AI-powered cooking companion that offers live step-by-step guidance, personalized recipe generation, and a user-friendly interface for home cooks.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
