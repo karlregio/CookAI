@@ -75,7 +75,7 @@ private struct RouteDestinationView: View {
     var body: some View {
         switch route {
         case .recipeOverview(let recipe):
-            ComingSoonScreen(title: recipe.title)
+            RecipeOverviewScreen(recipe: recipe)
         case .aiGenerate:
             ComingSoonScreen(title: "AI Generate")
         case .cookMode(let recipe):
@@ -94,4 +94,5 @@ private struct RouteDestinationView: View {
     MainTabView()
         .environment(AppRouter())
         .environment(AuthController())
+        .environment(GroceryController())
 }

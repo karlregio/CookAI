@@ -88,6 +88,36 @@ struct StarRatingView: View {
     }
 }
 
+/// Interactive 5-star picker — tap to set a rating, tap the same star again
+/// to clear it. Used by RateRecipeSheet.
+struct StarPicker: View {
+    @Binding var value: Int
+    var size: CGFloat = 32
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(1...5, id: \.self) { position in
+                Button {
+                    value = value == position ? 0 : position
+                } label: {
+                    StarIcon(fill: position <= value ? 1 : 0, size: size)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct StarPickerPreview: View {
+    @State private var value = 0
+
+    var body: some View {
+        StarPicker(value: $value)
+            .padding()
+            .background(Color.cream)
+    }
+}
+
 #Preview {
     VStack(alignment: .leading, spacing: 16) {
         StarRatingView(average: 4.7, count: 214)
@@ -96,4 +126,8 @@ struct StarRatingView: View {
     }
     .padding()
     .background(Color.cream)
+}
+
+#Preview("StarPicker") {
+    StarPickerPreview()
 }
