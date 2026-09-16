@@ -16,15 +16,18 @@ final class ServiceContainer {
     let authService: AuthService
     let recipeRepository: RecipeRepository
     let aiService: AIService
+    let notificationService: NotificationService
 
     init(
         authService: AuthService = MockAuthService(),
         recipeRepository: RecipeRepository = MockRecipeRepository(),
-        aiService: AIService = MockAIService()
+        aiService: AIService = MockAIService(),
+        notificationService: NotificationService = MockNotificationService()
     ) {
         self.authService = authService
         self.recipeRepository = recipeRepository
         self.aiService = aiService
+        self.notificationService = notificationService
     }
 }
 

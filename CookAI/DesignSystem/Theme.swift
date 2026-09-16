@@ -52,6 +52,9 @@ extension Color {
     /// charcoal at 10% opacity — used for hairline borders (--cream-border)
     static let creamBorder = Color.charcoal.opacity(0.1)
 
+    /// Muted placeholder/count text color used throughout the prototype (#C4B8B3)
+    static let charcoalPale = Color(hex: "#C4B8B3")
+
     /// STAR_COLOR in App.tsx — amber/gold, distinct from terracotta
     static let starGold = Color(hex: "#C8920A")
 }

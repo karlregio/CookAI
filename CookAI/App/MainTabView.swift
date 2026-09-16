@@ -7,6 +7,11 @@
 //  TabView chrome) that hides itself whenever the active tab has pushed a
 //  detail screen — mirroring the prototype's single-screen-swap navigation.
 //
+//  Uses TabView (with its native bar fully hidden) rather than manually
+//  swapping content, so each tab's NavigationStack — and any @State inside
+//  its root screen, like DashboardController's search/category/loaded data —
+//  survives switching tabs instead of being torn down and rebuilt.
+//
 
 import SwiftUI
 
@@ -14,20 +19,13 @@ struct MainTabView: View {
     @Environment(AppRouter.self) private var router
 
     var body: some View {
-        Group {
-            switch router.selectedTab {
-            case .home:
-                tabStack(.home) { TabPlaceholderScreen(tab: .home) }
-            case .saved:
-                tabStack(.saved) { TabPlaceholderScreen(tab: .saved) }
-            case .grocery:
-                tabStack(.grocery) { TabPlaceholderScreen(tab: .grocery) }
-            case .history:
-                tabStack(.history) { TabPlaceholderScreen(tab: .history) }
-            case .profile:
-                tabStack(.profile) { TabPlaceholderScreen(tab: .profile) }
+        TabView(selection: selectedTabBinding) {
+            ForEach(Tab.allCases, id: \.self) { tab in
+                tabStack(tab)
+                    .tag(tab)
             }
         }
+        .toolbar(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if isTabBarVisible {
                 CustomTabBar(active: router.selectedTab) { router.selectedTab = $0 }
@@ -35,17 +33,31 @@ struct MainTabView: View {
         }
     }
 
+    private var selectedTabBinding: Binding<Tab> {
+        Binding(get: { router.selectedTab }, set: { router.selectedTab = $0 })
+    }
+
     private var isTabBarVisible: Bool {
         (router.paths[router.selectedTab] ?? []).isEmpty
     }
 
     @ViewBuilder
-    private func tabStack<Root: View>(_ tab: Tab, @ViewBuilder root: () -> Root) -> some View {
+    private func tabStack(_ tab: Tab) -> some View {
         NavigationStack(path: pathBinding(for: tab)) {
-            root()
+            rootView(for: tab)
                 .navigationDestination(for: Route.self) { route in
                     RouteDestinationView(route: route)
                 }
+        }
+    }
+
+    @ViewBuilder
+    private func rootView(for tab: Tab) -> some View {
+        switch tab {
+        case .home:
+            DashboardScreen()
+        case .saved, .grocery, .history, .profile:
+            TabPlaceholderScreen(tab: tab)
         }
     }
 
@@ -81,4 +93,5 @@ private struct RouteDestinationView: View {
 #Preview {
     MainTabView()
         .environment(AppRouter())
+        .environment(AuthController())
 }

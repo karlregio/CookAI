@@ -25,6 +25,8 @@ protocol RecipeRepository: AnyObject {
     func addHistoryEntry(_ entry: CookHistoryEntry) async throws
     func fetchComments(recipeId: UUID) async throws -> [RecipeComment]
     func addComment(recipeId: UUID, authorId: UUID, text: String) async throws -> RecipeComment
+    /// Resolves uploader/attribution profiles referenced by recipes (e.g. Recipe.uploaderId).
+    func fetchUsers(ids: [UUID]) async throws -> [User]
 }
 
 enum RecipeRepositoryError: LocalizedError {
@@ -147,5 +149,11 @@ final class MockRecipeRepository: RecipeRepository {
         let comment = RecipeComment(id: UUID(), recipeId: recipeId, authorId: authorId, text: text, createdAt: Date())
         commentsByRecipe[recipeId, default: []].append(comment)
         return comment
+    }
+
+    func fetchUsers(ids: [UUID]) async throws -> [User] {
+        try await simulateNetworkDelay()
+        let idSet = Set(ids)
+        return MockData.allUsers.filter { idSet.contains($0.id) }
     }
 }
