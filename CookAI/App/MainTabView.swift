@@ -79,7 +79,7 @@ private struct RouteDestinationView: View {
         case .aiGenerate:
             ComingSoonScreen(title: "AI Generate")
         case .cookMode(let recipe):
-            ComingSoonScreen(title: "Cook Mode: \(recipe.title)")
+            CookModeScreen(recipe: recipe)
         case .notifications:
             ComingSoonScreen(title: "Notifications")
         case .conversations:
