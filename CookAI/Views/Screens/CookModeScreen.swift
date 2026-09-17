@@ -59,7 +59,7 @@ struct CookModeScreen: View {
             Button("Keep Cooking", role: .cancel) {}
             Button("Leave", role: .destructive) { router.pop() }
         } message: {
-            Text("Your timer is still running. If you leave now, this step's progress will be lost.")
+            Text("If you leave now, your progress on this recipe will be lost.")
         }
         .sheet(isPresented: $showAskAI) {
             AskAISheet(
@@ -105,7 +105,7 @@ struct CookModeScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Button {
-                    if controller.isTimerRunning {
+                    if hasUnsavedProgress {
                         showExitConfirmation = true
                     } else {
                         router.pop()
@@ -228,6 +228,14 @@ struct CookModeScreen: View {
     private var isTimerStarted: Bool {
         guard let remaining = controller.remainingSeconds, let total = controller.currentStep?.timerSeconds else { return false }
         return remaining < total
+    }
+
+    /// True whenever leaving would silently discard real progress: a timer
+    /// that's running or paused mid-countdown, or having advanced past the
+    /// first step. Only step 1 with no timer ever started skips the
+    /// confirmation, since there's nothing yet to lose.
+    private var hasUnsavedProgress: Bool {
+        controller.isTimerRunning || isTimerStarted || controller.currentStepIndex > 0
     }
 
     private var timerProgress: Double {
