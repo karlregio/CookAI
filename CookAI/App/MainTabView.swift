@@ -56,8 +56,14 @@ struct MainTabView: View {
         switch tab {
         case .home:
             DashboardScreen()
-        case .saved, .grocery, .history, .profile:
-            TabPlaceholderScreen(tab: tab)
+        case .saved:
+            SavedScreen()
+        case .grocery:
+            GroceryListScreen()
+        case .history:
+            HistoryScreen()
+        case .profile:
+            ProfileScreen()
         }
     }
 

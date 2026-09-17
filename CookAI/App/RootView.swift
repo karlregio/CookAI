@@ -30,7 +30,11 @@ struct RootView: View {
         .environment(auth)
         .environment(grocery)
         .onAppear {
-            auth.onSignedOut = { router.signOut() }
+            auth.onSignedOut = {
+                router.signOut()
+                grocery.clear()
+                Task { await ServiceContainer.shared.recipeRepository.resetSessionState() }
+            }
         }
     }
 }

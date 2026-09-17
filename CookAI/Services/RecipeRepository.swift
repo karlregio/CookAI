@@ -27,6 +27,12 @@ protocol RecipeRepository: AnyObject {
     func addComment(recipeId: UUID, authorId: UUID, text: String) async throws -> RecipeComment
     /// Resolves uploader/attribution profiles referenced by recipes (e.g. Recipe.uploaderId).
     func fetchUsers(ids: [UUID]) async throws -> [User]
+    /// Clears per-session mutable state (saved/liked ids, history, comments,
+    /// like counts) back to the seeded defaults — but never touches the
+    /// underlying MockData catalog itself, which is immutable value data.
+    /// Called on sign-out so a different login doesn't inherit the previous
+    /// session's saved recipes, likes, or cook history.
+    func resetSessionState() async
 }
 
 enum RecipeRepositoryError: LocalizedError {
@@ -155,5 +161,13 @@ final class MockRecipeRepository: RecipeRepository {
         try await simulateNetworkDelay()
         let idSet = Set(ids)
         return MockData.allUsers.filter { idSet.contains($0.id) }
+    }
+
+    func resetSessionState() async {
+        recipes = MockData.allRecipes
+        savedRecipeIds = []
+        likedRecipeIds = []
+        history = MockData.historyEntries
+        commentsByRecipe = Dictionary(grouping: MockData.comments, by: \.recipeId)
     }
 }
