@@ -57,9 +57,18 @@ final class SupabaseAuthService: AuthService {
                 password: password,
                 data: ["display_name": .string(trimmedName)]
             )
-            // With "Confirm email" on, Supabase returns no session until the link is tapped.
-            guard let session = response.session else {
-                throw SupabaseServiceError.confirmEmail
+            // If confirmation is on, Supabase returns no session. The database
+            // auto-confirms new accounts during development, so signing in
+            // straight away works; if it still fails, ask the user to confirm.
+            let session: Session
+            if let created = response.session {
+                session = created
+            } else {
+                do {
+                    session = try await client.auth.signIn(email: trimmedEmail, password: password)
+                } catch {
+                    throw SupabaseServiceError.confirmEmail
+                }
             }
             let user = try await fetchProfile(id: session.user.id)
             currentUser = user
