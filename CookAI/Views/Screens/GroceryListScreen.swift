@@ -15,6 +15,10 @@ import SwiftUI
 
 struct GroceryListScreen: View {
     @Environment(GroceryController.self) private var grocery
+    @Environment(\.dismiss) private var dismiss
+
+    /// True when pushed from Home or Profile (it is no longer a tab root).
+    var showsBackButton = false
     @State private var newItemName = ""
 
     private let categoryOrder = ["Produce", "Pantry", "Dairy & Eggs", "Meat & Fish", "Other"]
@@ -40,6 +44,10 @@ struct GroceryListScreen: View {
 
     private var header: some View {
         HStack {
+            if showsBackButton {
+                CustomBackButton { dismiss() }
+                    .padding(.trailing, 4)
+            }
             VStack(alignment: .leading, spacing: 4) {
                 Text("Grocery List")
                     .font(.lora(size: 24, weight: .semibold))

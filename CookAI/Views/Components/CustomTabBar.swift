@@ -5,8 +5,8 @@
 //  Replicates TabBar/TabIcon from App.tsx (~lines 661–786): white background,
 //  top hairline border, terracotta active color, charcoalLight inactive, 10pt
 //  Outfit Medium labels. Icons are SF Symbols chosen to match each SVG shape
-//  (the "cart" icon in the prototype is actually a tote-bag silhouette, so we
-//  use "bag"/"bag.fill" rather than "cart").
+//  (Discover uses the compass "safari" symbol; Grocery now lives behind the
+//  bag icon on Home and a row in Profile).
 //
 
 import SwiftUI
@@ -17,8 +17,8 @@ struct CustomTabBar: View {
 
     private let items: [(tab: Tab, outline: String, filled: String)] = [
         (.home, "house", "house.fill"),
+        (.discover, "safari", "safari.fill"),
         (.saved, "bookmark", "bookmark.fill"),
-        (.grocery, "bag", "bag.fill"),
         (.history, "clock", "clock.fill"),
         (.profile, "person", "person.fill"),
     ]

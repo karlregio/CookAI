@@ -18,16 +18,16 @@ enum AppPhase {
 
 enum Tab: String, CaseIterable, Hashable {
     case home
+    case discover
     case saved
-    case grocery
     case history
     case profile
 
     var title: String {
         switch self {
         case .home: return "Home"
+        case .discover: return "Discover"
         case .saved: return "Saved"
-        case .grocery: return "Grocery"
         case .history: return "History"
         case .profile: return "Profile"
         }
@@ -40,6 +40,7 @@ enum Tab: String, CaseIterable, Hashable {
 enum Route: Hashable {
     case recipeOverview(Recipe)
     case aiGenerate
+    case groceryList
     case cookMode(Recipe)
     case notifications
     case conversations

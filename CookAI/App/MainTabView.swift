@@ -2,7 +2,7 @@
 //  MainTabView.swift
 //  CookAI
 //
-//  The signed-in app shell: five tabs, each with its own NavigationStack and
+//  The signed-in app shell: five tabs (Home, Discover, Saved, History, Profile), each with its own NavigationStack and
 //  Route-typed push stack, plus a custom bottom tab bar (not the system
 //  TabView chrome) that hides itself whenever the active tab has pushed a
 //  detail screen — mirroring the prototype's single-screen-swap navigation.
@@ -56,10 +56,10 @@ struct MainTabView: View {
         switch tab {
         case .home:
             DashboardScreen()
+        case .discover:
+            DiscoverScreen()
         case .saved:
             SavedScreen()
-        case .grocery:
-            GroceryListScreen()
         case .history:
             HistoryScreen()
         case .profile:
@@ -84,6 +84,8 @@ private struct RouteDestinationView: View {
             RecipeOverviewScreen(recipe: recipe)
         case .aiGenerate:
             ComingSoonScreen(title: "AI Generate")
+        case .groceryList:
+            GroceryListScreen(showsBackButton: true)
         case .cookMode(let recipe):
             CookModeScreen(recipe: recipe)
         case .notifications:

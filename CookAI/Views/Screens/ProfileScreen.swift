@@ -135,6 +135,10 @@ struct ProfileScreen: View {
                 .foregroundStyle(Color.charcoalMid)
 
             VStack(spacing: 0) {
+                settingsRow(icon: "🛍️", title: "Grocery list") {
+                    router.push(.groceryList)
+                }
+                Divider().overlay(Color.creamBorder)
                 settingsRow(icon: "🔔", title: "Notifications") {
                     router.push(.notifications)
                 }

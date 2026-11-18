@@ -16,6 +16,7 @@ struct DashboardScreen: View {
 
     @Environment(AppRouter.self) private var router
     @Environment(AuthController.self) private var auth
+    @Environment(GroceryController.self) private var grocery
     @State private var controller = DashboardController()
 
     var body: some View {
@@ -41,6 +42,9 @@ struct DashboardScreen: View {
                 Spacer()
 
                 HStack(spacing: 8) {
+                    headerIconButton(systemName: "bag", badge: grocery.items.filter { !$0.isChecked }.count) {
+                        router.push(.groceryList)
+                    }
                     // Notifications is a finals-only feature (PROJECT_RULES.md #6);
                     // the entry point stays visible but opens ComingSoonScreen.
                     headerIconButton(systemName: "bell", badge: controller.unreadNotificationCount) {
@@ -246,4 +250,5 @@ private struct RecipeCardPlaceholder: View {
     }
     .environment(AppRouter())
     .environment(AuthController())
+    .environment(GroceryController())
 }
