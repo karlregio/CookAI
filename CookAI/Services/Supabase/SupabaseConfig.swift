@@ -21,6 +21,7 @@ enum SupabaseConfig {
 enum SupabaseServiceError: LocalizedError {
     case signInRequired
     case confirmEmail
+    case emailNotConfirmed
     case profileMissing
     case network
 
@@ -30,6 +31,8 @@ enum SupabaseServiceError: LocalizedError {
             return "Sign in to do that — guests can browse recipes only."
         case .confirmEmail:
             return "Account created! Check your inbox and tap the confirmation link, then log in."
+        case .emailNotConfirmed:
+            return "This account's email isn't confirmed yet. Confirm it from the email we sent, then log in."
         case .profileMissing:
             return "We couldn't load your profile. Please try again."
         case .network:

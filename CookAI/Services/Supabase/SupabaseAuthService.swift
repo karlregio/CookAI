@@ -110,7 +110,7 @@ final class SupabaseAuthService: AuthService {
             return AuthServiceError.invalidCredentials
         }
         if message.contains("email not confirmed") {
-            return SupabaseServiceError.confirmEmail
+            return SupabaseServiceError.emailNotConfirmed
         }
         // Supabase's own messages are readable ("User already registered",
         // "Password should be at least 6 characters"), so pass them through.
