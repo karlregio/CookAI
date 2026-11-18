@@ -337,11 +337,10 @@ final class SupabaseRecipeRepository: RecipeRepository {
     // `moderate_recipe` function re-checks the role, so a non-admin gets an
     // empty list / an "Admins only" error even if they reach these calls.
 
-    func fetchCommunityForModeration() async throws -> [Recipe] {
+    func fetchRecipesForModeration() async throws -> [Recipe] {
         _ = try requireUserId()
         return try await run {
             try await client.from("recipes").select()
-                .eq("source", value: RecipeSource.community.rawValue)
                 .order("created_at", ascending: false)
                 .fetch()
         }

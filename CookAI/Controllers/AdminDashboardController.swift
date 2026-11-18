@@ -45,10 +45,11 @@ final class AdminDashboardController {
         defer { isLoading = false }
         do {
             let loadedStats = try await recipeRepository.fetchAdminStats()
-            let community = try await recipeRepository.fetchCommunityForModeration()
+            let everything = try await recipeRepository.fetchRecipesForModeration()
             let handled = try await recipeRepository.fetchMyModerationActions()
 
-            let latest = Array(community.prefix(5))
+            // Recent submissions = what people shared, not the built-in library.
+            let latest = Array(everything.filter { $0.source != .library }.prefix(5))
             let mine = Array(handled.prefix(5))
             let ids = Array(Set((latest + mine).map(\.uploaderId)))
             let people = try await recipeRepository.fetchUsers(ids: ids)

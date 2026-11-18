@@ -34,8 +34,8 @@ protocol RecipeRepository: AnyObject {
     /// Stores an AI-generated recipe under the signed-in user so it can be
     /// liked, saved, rated and cooked. Guests get the recipe back unsaved.
     func saveGeneratedRecipe(_ recipe: Recipe) async throws -> Recipe
-    /// Admin only (the database enforces it): every community recipe, whatever its status, newest first.
-    func fetchCommunityForModeration() async throws -> [Recipe]
+    /// Admin only (the database enforces it): every recipe (library, community, AI), whatever its status, newest first.
+    func fetchRecipesForModeration() async throws -> [Recipe]
     /// Admin only: live counts for the dashboard cards.
     func fetchAdminStats() async throws -> AdminStats
     /// Every account, newest first (names and stats only; emails stay hidden).
@@ -202,9 +202,9 @@ final class MockRecipeRepository: RecipeRepository {
         return recipe
     }
 
-    func fetchCommunityForModeration() async throws -> [Recipe] {
+    func fetchRecipesForModeration() async throws -> [Recipe] {
         try await simulateNetworkDelay()
-        return recipes.filter { $0.source == .community }.sorted { $0.createdAt > $1.createdAt }
+        return recipes.sorted { $0.createdAt > $1.createdAt }
     }
 
     func fetchAdminStats() async throws -> AdminStats {

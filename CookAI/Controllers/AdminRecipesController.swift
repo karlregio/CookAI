@@ -2,8 +2,10 @@
 //  AdminRecipesController.swift
 //  CookAI
 //
-//  Recipe Management (screen 2): every community recipe with search (title or
-//  uploader) and an All / Visible / Flagged / Removed filter, plus the quick
+//  Recipe Management (screen 2): every recipe, in three scopes (All, Community =
+//  uploaded by cooks, Admin = uploaded by admins, including the built-in
+//  library), with search (title or uploader) and an All / Visible / Flagged /
+//  Removed filter, plus the quick
 //  flag / remove / approve actions. Flag and remove need a reason; the
 //  database enforces that and also refuses admins moderating their own recipes.
 //
@@ -31,6 +33,15 @@ final class AdminRecipesController {
         }
     }
 
+    /// Whose recipes to show. "Admin" = recipes uploaded by an admin account.
+    enum Scope: String, CaseIterable, Identifiable {
+        case all = "All"
+        case community = "Community"
+        case admin = "Admin"
+
+        var id: String { rawValue }
+    }
+
     private let recipeRepository: RecipeRepository
     private let authService: AuthService
 
@@ -44,6 +55,7 @@ final class AdminRecipesController {
 
     var searchText = ""
     var selectedFilter: StatusFilter = .all
+    var selectedScope: Scope = .all
 
     init(status: RecipeStatus? = nil, search: String? = nil, services: ServiceContainer = .shared) {
         self.recipeRepository = services.recipeRepository
@@ -56,13 +68,32 @@ final class AdminRecipesController {
 
     var isAdmin: Bool { authService.currentUser?.role == .admin }
 
+    func isAdminUpload(_ recipe: Recipe) -> Bool {
+        uploaders[recipe.uploaderId]?.role == .admin
+    }
+
+    private func recipes(in scope: Scope) -> [Recipe] {
+        switch scope {
+        case .all: return recipes
+        case .community: return recipes.filter { !isAdminUpload($0) }
+        case .admin: return recipes.filter { isAdminUpload($0) }
+        }
+    }
+
+    func count(for scope: Scope) -> Int {
+        recipes(in: scope).count
+    }
+
+    /// Status counts follow the selected scope.
     func count(for filter: StatusFilter) -> Int {
-        guard let status = filter.status else { return recipes.count }
-        return recipes.filter { $0.status == status }.count
+        let base = recipes(in: selectedScope)
+        guard let status = filter.status else { return base.count }
+        return base.filter { $0.status == status }.count
     }
 
     var shownRecipes: [Recipe] {
-        let byStatus = selectedFilter.status.map { status in recipes.filter { $0.status == status } } ?? recipes
+        let byScope = recipes(in: selectedScope)
+        let byStatus = selectedFilter.status.map { status in byScope.filter { $0.status == status } } ?? byScope
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return byStatus }
         return byStatus.filter { recipe in
@@ -89,9 +120,9 @@ final class AdminRecipesController {
             hasLoaded = true
         }
         do {
-            let community = try await recipeRepository.fetchCommunityForModeration()
-            let people = try await recipeRepository.fetchUsers(ids: Array(Set(community.map(\.uploaderId))))
-            recipes = community
+            let everything = try await recipeRepository.fetchRecipesForModeration()
+            let people = try await recipeRepository.fetchUsers(ids: Array(Set(everything.map(\.uploaderId))))
+            recipes = everything
             uploaders = Dictionary(people.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         } catch {
             errorMessage = error.localizedDescription

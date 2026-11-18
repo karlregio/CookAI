@@ -63,6 +63,17 @@ struct AdminRecipesScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             SearchBar(text: $controller.searchText, placeholder: "Search by title or uploader...")
 
+            HStack(spacing: 8) {
+                ForEach(AdminRecipesController.Scope.allCases) { scope in
+                    CategoryChip(
+                        title: "\(scope.rawValue) \(controller.count(for: scope))",
+                        isActive: controller.selectedScope == scope
+                    ) {
+                        controller.selectedScope = scope
+                    }
+                }
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(AdminRecipesController.StatusFilter.allCases) { filter in
@@ -222,7 +233,11 @@ struct AdminRecipesScreen: View {
     private func subtitle(for recipe: Recipe) -> String {
         let who = controller.uploader(for: recipe).map { "@\($0.username)" } ?? "Unknown cook"
         let date = recipe.createdAt.formatted(.dateTime.month(.abbreviated).day().year())
-        return "\(who) · \(date)"
+        switch recipe.source {
+        case .library: return "\(who) · \(date) · Library"
+        case .aiGenerated: return "\(who) · \(date) · AI"
+        case .community: return "\(who) · \(date)"
+        }
     }
 
     // MARK: - Empty / error
@@ -230,7 +245,7 @@ struct AdminRecipesScreen: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Text("🔍").font(.system(size: 36))
-            Text(controller.recipes.isEmpty ? "No community recipes yet" : "No recipes match your filter")
+            Text(controller.recipes.isEmpty ? "No recipes yet" : "No recipes match your filter")
                 .font(.outfit(size: 14))
                 .foregroundStyle(Color.charcoalLight)
         }
