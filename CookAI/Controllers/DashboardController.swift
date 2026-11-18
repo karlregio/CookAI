@@ -13,10 +13,12 @@ import Observation
 final class DashboardController {
     private let recipeRepository: RecipeRepository
     private let notificationService: NotificationService
+    private let messageService: MessageService
 
     private(set) var recipes: [Recipe] = []
     private(set) var uploaders: [UUID: User] = [:]
     private(set) var unreadNotificationCount = 0
+    private(set) var unreadMessageCount = 0
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -26,6 +28,7 @@ final class DashboardController {
     init(services: ServiceContainer = .shared) {
         self.recipeRepository = services.recipeRepository
         self.notificationService = services.notificationService
+        self.messageService = services.messageService
     }
 
     /// Filters by cuisine category ("All" shows everything) and then by a
@@ -51,6 +54,16 @@ final class DashboardController {
     func loadIfNeeded() async {
         guard recipes.isEmpty else { return }
         await load()
+    }
+
+    /// Cheap refresh of just the bell badge (used when returning to the screen).
+    func refreshUnreadCount() async {
+        if let count = try? await notificationService.fetchUnreadCount() {
+            unreadNotificationCount = count
+        }
+        if let count = try? await messageService.fetchUnreadCount() {
+            unreadMessageCount = count
+        }
     }
 
     func load() async {

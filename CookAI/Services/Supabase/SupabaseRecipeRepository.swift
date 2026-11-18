@@ -424,6 +424,17 @@ final class SupabaseRecipeRepository: RecipeRepository {
         }
     }
 
+    func fetchRecipes(byUploader id: UUID) async throws -> [Recipe] {
+        try await run {
+            try await client.from("recipes").select()
+                .eq("uploader_id", value: id.uuidString)
+                .eq("status", value: RecipeStatus.visible.rawValue)
+                .neq("source", value: RecipeSource.aiGenerated.rawValue)
+                .order("created_at", ascending: false)
+                .fetch()
+        }
+    }
+
     func resetSessionState() async {
         // Nothing cached locally — all state lives in the database.
     }

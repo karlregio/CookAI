@@ -29,6 +29,8 @@ protocol RecipeRepository: AnyObject {
     func addComment(recipeId: UUID, authorId: UUID, text: String) async throws -> RecipeComment
     /// Resolves uploader/attribution profiles referenced by recipes (e.g. Recipe.uploaderId).
     func fetchUsers(ids: [UUID]) async throws -> [User]
+    /// A cook's visible, shared recipes (community + AI-generated, never removed ones), newest first.
+    func fetchRecipes(byUploader id: UUID) async throws -> [Recipe]
     /// Publishes a community recipe with its photo and returns the saved recipe.
     func uploadRecipe(_ draft: RecipeDraft, photo: Data) async throws -> Recipe
     /// Stores an AI-generated recipe under the signed-in user so it can be
@@ -263,6 +265,12 @@ final class MockRecipeRepository: RecipeRepository {
         try await simulateNetworkDelay()
         let idSet = Set(ids)
         return MockData.allUsers.filter { idSet.contains($0.id) }
+    }
+
+    func fetchRecipes(byUploader id: UUID) async throws -> [Recipe] {
+        try await simulateNetworkDelay()
+        return recipes.filter { $0.uploaderId == id && $0.status == .visible && $0.source != .aiGenerated }
+            .sorted { $0.createdAt > $1.createdAt }
     }
 
     func resetSessionState() async {

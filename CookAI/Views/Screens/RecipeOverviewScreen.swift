@@ -254,7 +254,18 @@ struct RecipeOverviewScreen: View {
     private var content: some View {
         VStack(alignment: .leading, spacing: 20) {
             if let uploader = controller.uploader {
-                UploaderAttributionView(user: uploader, size: .md)
+                Button {
+                    router.push(.cookProfile(uploader))
+                } label: {
+                    HStack {
+                        UploaderAttributionView(user: uploader, size: .md)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.charcoalPale)
+                    }
+                }
+                .buttonStyle(.plain)
             }
 
             ratingRow

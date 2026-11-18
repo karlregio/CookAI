@@ -28,4 +28,41 @@ final class SupabaseNotificationService: NotificationService {
             throw SupabaseServiceError.friendly(error)
         }
     }
+
+    func fetchNotifications() async throws -> [AppNotification] {
+        guard client.auth.currentUser != nil else { return [] }
+        do {
+            return try await client.from("notifications")
+                .select()
+                .order("created_at", ascending: false)
+                .limit(100)
+                .fetch()
+        } catch {
+            throw SupabaseServiceError.friendly(error)
+        }
+    }
+
+    func markAllRead() async throws {
+        guard client.auth.currentUser != nil else { return }
+        do {
+            try await client.from("notifications")
+                .update(["is_read": true])
+                .eq("is_read", value: false)
+                .execute()
+        } catch {
+            throw SupabaseServiceError.friendly(error)
+        }
+    }
+
+    func markRead(id: UUID) async throws {
+        guard client.auth.currentUser != nil else { return }
+        do {
+            try await client.from("notifications")
+                .update(["is_read": true])
+                .eq("id", value: id.uuidString)
+                .execute()
+        } catch {
+            throw SupabaseServiceError.friendly(error)
+        }
+    }
 }

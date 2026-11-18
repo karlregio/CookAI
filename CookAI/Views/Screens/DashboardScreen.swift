@@ -28,6 +28,7 @@ struct DashboardScreen: View {
         .background(Color.cream.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .task { await controller.loadIfNeeded() }
+        .onAppear { Task { await controller.refreshUnreadCount() } }
     }
 
     // MARK: - Header
@@ -45,14 +46,10 @@ struct DashboardScreen: View {
                     headerIconButton(systemName: "bag", badge: grocery.items.filter { !$0.isChecked }.count) {
                         router.push(.groceryList)
                     }
-                    // Notifications is a finals-only feature (PROJECT_RULES.md #6);
-                    // the entry point stays visible but opens ComingSoonScreen.
                     headerIconButton(systemName: "bell", badge: controller.unreadNotificationCount) {
                         router.push(.notifications)
                     }
-                    // Messages is also finals-only — no unread count exists yet, so
-                    // no badge is shown rather than fabricating one.
-                    headerIconButton(systemName: "message", badge: 0) {
+                    headerIconButton(systemName: "message", badge: controller.unreadMessageCount) {
                         router.push(.conversations)
                     }
                 }

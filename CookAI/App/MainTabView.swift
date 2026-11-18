@@ -91,9 +91,13 @@ private struct RouteDestinationView: View {
         case .cookMode(let recipe):
             CookModeScreen(recipe: recipe)
         case .notifications:
-            ComingSoonScreen(title: "Notifications")
+            NotificationsScreen()
         case .conversations:
-            ComingSoonScreen(title: "Messages")
+            ConversationsScreen()
+        case .cookProfile(let user):
+            CookProfileScreen(user: user)
+        case .chat(let conversation, let user):
+            ChatScreen(conversation: conversation, other: user)
         case .adminDashboard:
             AdminDashboardScreen()
         case .adminUsers:

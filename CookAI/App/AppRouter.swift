@@ -45,6 +45,9 @@ enum Route: Hashable {
     case cookMode(Recipe)
     case notifications
     case conversations
+    /// Another cook's public profile.
+    case cookProfile(User)
+    case chat(Conversation, User)
     case adminDashboard
     case adminUsers
     /// Recipe Management, optionally opened on a status filter and/or a search (e.g. one uploader).
