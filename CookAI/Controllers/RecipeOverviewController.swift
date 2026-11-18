@@ -106,7 +106,18 @@ final class RecipeOverviewController {
         async let commentsTask: Void = loadComments()
         async let nutritionTask: Void = loadNutrition()
         async let pairingsTask: Void = loadPairings()
-        _ = await (uploaderTask, commentsTask, nutritionTask, pairingsTask)
+        async let interactionTask: Void = loadInteractionState()
+        _ = await (uploaderTask, commentsTask, nutritionTask, pairingsTask, interactionTask)
+    }
+
+    /// Restores this user's existing like/save/rating so toggles start from the truth.
+    func loadInteractionState() async {
+        guard let state = try? await recipeRepository.fetchInteractionState(recipeId: recipe.id) else { return }
+        isLiked = state.isLiked
+        isSaved = state.isSaved
+        if let rating = state.myRating {
+            myRating = rating
+        }
     }
 
     func loadUploader() async {

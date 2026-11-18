@@ -29,6 +29,15 @@ struct RootView: View {
         .environment(router)
         .environment(auth)
         .environment(grocery)
+        .task {
+            await auth.restoreSession()
+        }
+        .onChange(of: router.phase) { _, phase in
+            // A login restored during the splash goes straight to the app.
+            if phase == .auth, auth.currentUser != nil {
+                router.completeSignIn()
+            }
+        }
         .onAppear {
             auth.onSignedOut = {
                 router.signOut()

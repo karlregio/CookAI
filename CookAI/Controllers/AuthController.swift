@@ -25,6 +25,13 @@ final class AuthController {
         self.currentUser = services.authService.currentUser
     }
 
+    /// Called once at launch so a returning user skips the login screen.
+    func restoreSession() async {
+        if let restored = await authService.restoreSession() {
+            currentUser = restored
+        }
+    }
+
     func signIn(email: String, password: String) async {
         errorMessage = nil
         isLoading = true

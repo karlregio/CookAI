@@ -2,10 +2,9 @@
 //  ServiceContainer.swift
 //  CookAI
 //
-//  Single place where concrete service implementations are wired up. Swap the
-//  Mock* implementations for Supabase-backed ones here once the backend is
-//  ready — no caller code needs to change since everything depends on the
-//  protocols, not the concrete types.
+//  Single place where concrete service implementations are wired up. Auth,
+//  recipes and notifications use Supabase; AI is still the mock until the
+//  Gemini Edge Function is in place. Callers depend only on the protocols.
 //
 
 import SwiftUI
@@ -19,10 +18,10 @@ final class ServiceContainer {
     let notificationService: NotificationService
 
     init(
-        authService: AuthService = MockAuthService(),
-        recipeRepository: RecipeRepository = MockRecipeRepository(),
+        authService: AuthService = SupabaseAuthService(),
+        recipeRepository: RecipeRepository = SupabaseRecipeRepository(),
         aiService: AIService = MockAIService(),
-        notificationService: NotificationService = MockNotificationService()
+        notificationService: NotificationService = SupabaseNotificationService()
     ) {
         self.authService = authService
         self.recipeRepository = recipeRepository

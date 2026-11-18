@@ -10,6 +10,8 @@ import Foundation
 
 protocol AuthService: AnyObject {
     var currentUser: User? { get }
+    /// Restores a saved login from a previous launch, if any.
+    func restoreSession() async -> User?
     func signIn(email: String, password: String) async throws -> User
     func signUp(name: String, email: String, password: String) async throws -> User
     func signOut() async throws
@@ -34,6 +36,10 @@ final class MockAuthService: AuthService {
 
     private func simulateNetworkDelay() async throws {
         try await Task.sleep(for: .seconds(Double.random(in: 0.6...1.5)))
+    }
+
+    func restoreSession() async -> User? {
+        currentUser
     }
 
     /// Mock rule: "admin@cookai.com" (case-insensitive) signs in as the admin account;

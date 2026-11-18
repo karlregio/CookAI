@@ -13,6 +13,8 @@ protocol RecipeRepository: AnyObject {
     func fetchCommunityRecipes() async throws -> [Recipe]
     func fetchRecipe(id: UUID) async throws -> Recipe
     func searchRecipes(query: String, cuisine: String?) async throws -> [Recipe]
+    /// Whether the signed-in user has liked/saved/rated this recipe (all false for guests).
+    func fetchInteractionState(recipeId: UUID) async throws -> RecipeInteractionState
     /// Returns the new saved state (true = now saved).
     @discardableResult
     func toggleSave(recipeId: UUID) async throws -> Bool
@@ -33,6 +35,12 @@ protocol RecipeRepository: AnyObject {
     /// Called on sign-out so a different login doesn't inherit the previous
     /// session's saved recipes, likes, or cook history.
     func resetSessionState() async
+}
+
+struct RecipeInteractionState: Hashable {
+    var isLiked: Bool
+    var isSaved: Bool
+    var myRating: Int?
 }
 
 enum RecipeRepositoryError: LocalizedError {
@@ -89,6 +97,15 @@ final class MockRecipeRepository: RecipeRepository {
             let matchesCuisine = cuisine == nil || cuisine == "All" || recipe.cuisine == cuisine
             return matchesQuery && matchesCuisine
         }
+    }
+
+    func fetchInteractionState(recipeId: UUID) async throws -> RecipeInteractionState {
+        try await simulateNetworkDelay()
+        return RecipeInteractionState(
+            isLiked: likedRecipeIds.contains(recipeId),
+            isSaved: savedRecipeIds.contains(recipeId),
+            myRating: nil
+        )
     }
 
     @discardableResult
