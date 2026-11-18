@@ -31,6 +31,8 @@ protocol RecipeRepository: AnyObject {
     func deleteComment(id: UUID) async throws
     /// Resolves uploader/attribution profiles referenced by recipes (e.g. Recipe.uploaderId).
     func fetchUsers(ids: [UUID]) async throws -> [User]
+    /// Everything the signed-in user owns (any status, any source), newest first.
+    func fetchMyRecipes() async throws -> [Recipe]
     /// A cook's visible, shared recipes (community + AI-generated, never removed ones), newest first.
     func fetchRecipes(byUploader id: UUID) async throws -> [Recipe]
     /// Publishes a community recipe with its photo and returns the saved recipe.
@@ -298,6 +300,11 @@ final class MockRecipeRepository: RecipeRepository {
         try await simulateNetworkDelay()
         let idSet = Set(ids)
         return MockData.allUsers.filter { idSet.contains($0.id) }
+    }
+
+    func fetchMyRecipes() async throws -> [Recipe] {
+        try await simulateNetworkDelay()
+        return recipes.filter { $0.uploaderId == MockData.alexUser.id }.sorted { $0.createdAt > $1.createdAt }
     }
 
     func fetchRecipes(byUploader id: UUID) async throws -> [Recipe] {

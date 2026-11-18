@@ -69,18 +69,32 @@ struct DiscoverScreen: View {
 
     private var searchAndChips: some View {
         VStack(alignment: .leading, spacing: 16) {
-            SearchBar(text: $controller.searchText, placeholder: "Search dishes, cuisines, cooks...")
-                .padding(.horizontal, 20)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(controller.cuisines, id: \.self) { cuisine in
-                        CategoryChip(title: cuisine, isActive: controller.selectedCuisine == cuisine) {
-                            controller.selectedCuisine = cuisine
-                        }
+            HStack(spacing: 8) {
+                ForEach(DiscoverController.Mode.allCases) { mode in
+                    CategoryChip(title: mode.rawValue, isActive: controller.mode == mode) {
+                        controller.mode = mode
                     }
                 }
-                .padding(.horizontal, 20)
+            }
+            .padding(.horizontal, 20)
+
+            SearchBar(
+                text: $controller.searchText,
+                placeholder: controller.mode == .recipes ? "Search dishes, cuisines, cooks..." : "Search cooks by name or @username..."
+            )
+            .padding(.horizontal, 20)
+
+            if controller.mode == .recipes {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(controller.cuisines, id: \.self) { cuisine in
+                            CategoryChip(title: cuisine, isActive: controller.selectedCuisine == cuisine) {
+                                controller.selectedCuisine = cuisine
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
             }
         }
         .padding(.bottom, 16)
@@ -90,7 +104,9 @@ struct DiscoverScreen: View {
 
     private var content: some View {
         Group {
-            if controller.isLoading && controller.recipes.isEmpty {
+            if controller.mode == .cooks {
+                cooksList
+            } else if controller.isLoading && controller.recipes.isEmpty {
                 ProgressView()
                     .tint(Color.terracotta)
                     .padding(.top, 64)
@@ -103,6 +119,72 @@ struct DiscoverScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    // MARK: - Cooks
+
+    @ViewBuilder
+    private var cooksList: some View {
+        if controller.shownCooks.isEmpty {
+            VStack(spacing: 8) {
+                Text("👩‍🍳").font(.system(size: 36))
+                Text(controller.isLoading ? "Loading cooks..." : "No cooks match your search")
+                    .font(.outfit(size: 14))
+                    .foregroundStyle(Color.charcoalLight)
+            }
+            .padding(.top, 64)
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(controller.shownCooks) { cook in
+                        cookRow(cook)
+                        Divider().overlay(Color.creamBorder)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
+            }
+            .refreshable { await controller.load() }
+        }
+    }
+
+    private func cookRow(_ cook: User) -> some View {
+        Button {
+            router.push(.cookProfile(cook))
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().fill(Color(hex: cook.avatarColorHex))
+                    Text(String(cook.displayName.prefix(1)).uppercased())
+                        .font(.lora(size: 17, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                .frame(width: 44, height: 44)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 5) {
+                        Text(cook.displayName)
+                            .font(.outfit(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.charcoal)
+                        if cook.isVerified {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color(hex: cook.avatarColorHex))
+                        }
+                    }
+                    Text("@\(cook.username) · \(cook.recipesCount) recipe\(cook.recipesCount == 1 ? "" : "s")")
+                        .font(.outfit(size: 12))
+                        .foregroundStyle(Color.charcoalLight)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.charcoalPale)
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var recipeGrid: some View {

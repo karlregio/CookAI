@@ -508,6 +508,16 @@ final class SupabaseRecipeRepository: RecipeRepository {
         }
     }
 
+    func fetchMyRecipes() async throws -> [Recipe] {
+        guard let userId = client.auth.currentUser?.id else { return [] }
+        return try await run {
+            try await client.from("recipes").select()
+                .eq("uploader_id", value: userId.uuidString)
+                .order("created_at", ascending: false)
+                .fetch()
+        }
+    }
+
     func fetchRecipes(byUploader id: UUID) async throws -> [Recipe] {
         try await run {
             try await client.from("recipes").select()

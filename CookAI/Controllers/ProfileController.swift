@@ -17,6 +17,7 @@ final class ProfileController {
     private let recipeRepository: RecipeRepository
 
     private(set) var cookedCount = 0
+    private(set) var myRecipes: [Recipe] = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -45,6 +46,7 @@ final class ProfileController {
         do {
             let history = try await recipeRepository.fetchHistory()
             cookedCount = history.count
+            myRecipes = try await recipeRepository.fetchMyRecipes()
         } catch {
             errorMessage = error.localizedDescription
         }

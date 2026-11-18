@@ -24,6 +24,9 @@ struct ProfileScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 header
+                if auth.currentUser != nil {
+                    myRecipesSection
+                }
                 favoriteCuisinesSection
                 settingsSection
                 logOutButton
@@ -106,6 +109,87 @@ struct ProfileScreen: View {
         .softShadow()
     }
 
+    // MARK: - My recipes
+
+    private var myRecipesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("MY RECIPES")
+                    .font(.outfit(size: 11, weight: .semibold))
+                    .tracking(1)
+                    .foregroundStyle(Color.charcoalMid)
+                Spacer()
+                Button {
+                    router.push(.uploadRecipe)
+                } label: {
+                    Label("Share", systemImage: "plus")
+                        .font(.outfit(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.terracotta)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if controller.myRecipes.isEmpty {
+                Text("You haven't shared a recipe yet. Tap Share to post your first one.")
+                    .font(.outfit(size: 13))
+                    .foregroundStyle(Color.charcoalLight)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .softShadow()
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(controller.myRecipes.enumerated()), id: \.element.id) { index, recipe in
+                        if index > 0 { Divider().overlay(Color.creamBorder) }
+                        myRecipeRow(recipe)
+                    }
+                }
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .softShadow()
+            }
+        }
+    }
+
+    private func myRecipeRow(_ recipe: Recipe) -> some View {
+        Button {
+            router.push(.recipeOverview(recipe))
+        } label: {
+            HStack(spacing: 12) {
+                AsyncImage(url: recipe.imageURL) { phase in
+                    if case .success(let image) = phase {
+                        image.resizable().scaledToFill()
+                    } else {
+                        Color(hex: "#E8DDD5")
+                    }
+                }
+                .frame(width: 52, height: 52)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(recipe.title)
+                        .font(.outfit(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.charcoal)
+                        .lineLimit(1)
+                    Text("\(recipe.cuisine) · ♥ \(recipe.likeCount) · ★ \(String(format: "%.1f", recipe.ratingAverage))")
+                        .font(.outfit(size: 11))
+                        .foregroundStyle(Color.charcoalLight)
+                        .lineLimit(1)
+                }
+                Spacer()
+                if recipe.status != .visible {
+                    AdminStatusPill(status: recipe.status)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.charcoalPale)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - Favorite cuisines
 
     private var favoriteCuisinesSection: some View {
@@ -141,10 +225,6 @@ struct ProfileScreen: View {
                 Divider().overlay(Color.creamBorder)
                 settingsRow(icon: "🔔", title: "Notifications") {
                     router.push(.notifications)
-                }
-                Divider().overlay(Color.creamBorder)
-                settingsRow(icon: "⭐", title: "Rate the app") {
-                    router.push(.comingSoon(title: "Rate the App"))
                 }
                 Divider().overlay(Color.creamBorder)
                 settingsRow(icon: "ℹ️", title: "About CookAI") {
