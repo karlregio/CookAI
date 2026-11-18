@@ -20,6 +20,16 @@ protocol AIService: AnyObject {
     func troubleshoot(issue: String, recipe: Recipe) async throws -> String
 }
 
+enum AIServiceError: LocalizedError {
+    case message(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .message(let text): return text
+        }
+    }
+}
+
 final class MockAIService: AIService {
     private var variationIndex = 0
     private var pairingIndexByRecipe: [UUID: Int] = [:]

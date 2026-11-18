@@ -3,8 +3,8 @@
 //  CookAI
 //
 //  Single place where concrete service implementations are wired up. Auth,
-//  recipes and notifications use Supabase; AI is still the mock until the
-//  Gemini Edge Function is in place. Callers depend only on the protocols.
+//  recipes, notifications and AI (Gemini via an Edge Function) use Supabase.
+//  The Mock* services remain for previews and tests. Callers depend only on the protocols.
 //
 
 import SwiftUI
@@ -20,7 +20,7 @@ final class ServiceContainer {
     init(
         authService: AuthService = SupabaseAuthService(),
         recipeRepository: RecipeRepository = SupabaseRecipeRepository(),
-        aiService: AIService = MockAIService(),
+        aiService: AIService = SupabaseAIService(),
         notificationService: NotificationService = SupabaseNotificationService()
     ) {
         self.authService = authService
