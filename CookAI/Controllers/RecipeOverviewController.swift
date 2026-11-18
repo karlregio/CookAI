@@ -99,6 +99,22 @@ final class RecipeOverviewController {
         ingredientRows.map { (name: $0.displayText, category: $0.category) }
     }
 
+    /// How many ingredients are ticked. When some are, "Add to List" adds only those.
+    var selectedIngredientCount: Int {
+        ingredientRows.filter { checkedIngredientIds.contains($0.id) }.count
+    }
+
+    /// The ticked ingredients if any are ticked, otherwise every ingredient.
+    var groceryEntriesToAdd: [(name: String, category: String)] {
+        let chosen = ingredientRows.filter { checkedIngredientIds.contains($0.id) }
+        let rows = chosen.isEmpty ? ingredientRows : chosen
+        return rows.map { (name: $0.displayText, category: $0.category) }
+    }
+
+    func clearIngredientSelection() {
+        checkedIngredientIds = []
+    }
+
     // MARK: - Initial load
 
     func loadSecondaryContent() async {

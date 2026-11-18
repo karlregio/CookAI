@@ -389,13 +389,19 @@ struct RecipeOverviewScreen: View {
 
     private var addToGroceryButton: some View {
         Button {
-            grocery.addItems(controller.groceryEntries, recipeTitle: controller.recipe.title)
-            controller.showToast("Added \(controller.groceryEntries.count) items to your Grocery List")
+            let wanted = controller.groceryEntriesToAdd
+            let added = grocery.addItems(wanted, recipeTitle: controller.recipe.title)
+            controller.clearIngredientSelection()
+            if added == 0 {
+                controller.showToast("Already on your Grocery List")
+            } else {
+                controller.showToast("Added \(added) item\(added == 1 ? "" : "s") under \(controller.recipe.title)")
+            }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "bag")
                     .font(.system(size: 12, weight: .semibold))
-                Text("Add to List")
+                Text(controller.selectedIngredientCount > 0 ? "Add \(controller.selectedIngredientCount) selected" : "Add all to List")
                     .font(.outfit(size: 12, weight: .semibold))
             }
             .foregroundStyle(Color.sage)

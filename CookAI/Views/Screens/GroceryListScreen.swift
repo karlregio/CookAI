@@ -21,8 +21,6 @@ struct GroceryListScreen: View {
     var showsBackButton = false
     @State private var newItemName = ""
 
-    private let categoryOrder = ["Produce", "Pantry", "Dairy & Eggs", "Meat & Fish", "Other"]
-
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -75,11 +73,14 @@ struct GroceryListScreen: View {
 
     // MARK: - Grouping
 
+    /// One group per recipe, in the order the recipes were first added.
     private var groupedItems: [(category: String, items: [GroceryItem])] {
-        let grouped = Dictionary(grouping: grocery.items, by: \.category)
-        return categoryOrder.compactMap { category in
-            guard let items = grouped[category], !items.isEmpty else { return nil }
-            return (category, items)
+        var order: [String] = []
+        for item in grocery.items where !order.contains(item.recipeTitle) {
+            order.append(item.recipeTitle)
+        }
+        return order.map { title in
+            (title, grocery.items.filter { $0.recipeTitle == title })
         }
     }
 
@@ -163,7 +164,8 @@ struct GroceryListScreen: View {
             Text(category.uppercased())
                 .font(.outfit(size: 11, weight: .bold))
                 .tracking(1)
-                .foregroundStyle(Color.charcoalLight)
+                .foregroundStyle(Color.terracotta)
+                .lineLimit(1)
             Rectangle().fill(Color.creamBorder).frame(height: 1)
             Text("\(items.filter { !$0.isChecked }.count)/\(items.count)")
                 .font(.outfit(size: 11))
@@ -189,15 +191,6 @@ struct GroceryListScreen: View {
                     .strikethrough(item.isChecked)
 
                 Spacer(minLength: 8)
-
-                Text(item.recipeTitle)
-                    .font(.outfit(size: 10, weight: .medium))
-                    .foregroundStyle(Color.terracotta)
-                    .lineLimit(1)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.terracotta.opacity(0.08), in: Capsule())
-                    .frame(maxWidth: 100, alignment: .trailing)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)

@@ -40,7 +40,11 @@ final class GroceryController {
     /// Returns the number of items actually added (after de-duplication).
     @discardableResult
     func addItems(_ entries: [(name: String, category: String)], recipeTitle: String) -> Int {
-        var existingNames = Set(items.map { $0.name.lowercased().trimmingCharacters(in: .whitespaces) })
+        // Duplicates are checked within the same recipe, so every recipe's group stays complete.
+        var existingNames = Set(
+            items.filter { $0.recipeTitle == recipeTitle }
+                .map { $0.name.lowercased().trimmingCharacters(in: .whitespaces) }
+        )
         var addedCount = 0
         var added: [GroceryItem] = []
         for entry in entries {
