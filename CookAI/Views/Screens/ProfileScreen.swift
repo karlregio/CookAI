@@ -181,7 +181,7 @@ struct ProfileScreen: View {
 
     private var adminRow: some View {
         Button {
-            router.push(.comingSoon(title: "Admin Dashboard"))
+            router.push(.adminDashboard)
         } label: {
             HStack(spacing: 12) {
                 Text("🛡️").font(.system(size: 17))

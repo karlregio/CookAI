@@ -45,6 +45,7 @@ enum Route: Hashable {
     case cookMode(Recipe)
     case notifications
     case conversations
+    case adminDashboard
     case comingSoon(title: String)
 }
 

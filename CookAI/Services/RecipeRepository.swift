@@ -34,6 +34,13 @@ protocol RecipeRepository: AnyObject {
     /// Stores an AI-generated recipe under the signed-in user so it can be
     /// liked, saved, rated and cooked. Guests get the recipe back unsaved.
     func saveGeneratedRecipe(_ recipe: Recipe) async throws -> Recipe
+    /// Admin only (the database enforces it): community recipes with this status, newest first.
+    func fetchModerationQueue(status: RecipeStatus) async throws -> [Recipe]
+    /// Admin only: recipes the signed-in admin has approved, flagged or removed, newest first.
+    func fetchMyModerationActions() async throws -> [Recipe]
+    /// Admin only: Approve = `.visible`; `.flagged` and `.removed` need a non-empty reason.
+    /// Admins can't moderate their own recipes.
+    func moderateRecipe(id: UUID, status: RecipeStatus, reason: String?) async throws -> Recipe
     /// Clears per-session mutable state (saved/liked ids, history, comments,
     /// like counts) back to the seeded defaults — but never touches the
     /// underlying MockData catalog itself, which is immutable value data.
@@ -187,6 +194,27 @@ final class MockRecipeRepository: RecipeRepository {
             recipes.append(recipe)
         }
         return recipe
+    }
+
+    func fetchModerationQueue(status: RecipeStatus) async throws -> [Recipe] {
+        try await simulateNetworkDelay()
+        return recipes.filter { $0.source == .community && $0.status == status }
+    }
+
+    func fetchMyModerationActions() async throws -> [Recipe] {
+        try await simulateNetworkDelay()
+        return recipes.filter { $0.moderatedBy == MockData.adminUser.id }
+    }
+
+    func moderateRecipe(id: UUID, status: RecipeStatus, reason: String?) async throws -> Recipe {
+        try await simulateNetworkDelay()
+        guard let index = recipes.firstIndex(where: { $0.id == id }) else {
+            throw RecipeRepositoryError.notFound
+        }
+        recipes[index].status = status
+        recipes[index].moderationReason = status == .visible ? nil : reason
+        recipes[index].moderatedBy = MockData.adminUser.id
+        return recipes[index]
     }
 
     func fetchComments(recipeId: UUID) async throws -> [RecipeComment] {

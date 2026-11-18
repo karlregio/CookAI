@@ -94,6 +94,8 @@ private struct RouteDestinationView: View {
             ComingSoonScreen(title: "Notifications")
         case .conversations:
             ComingSoonScreen(title: "Messages")
+        case .adminDashboard:
+            AdminDashboardScreen()
         case .comingSoon(let title):
             ComingSoonScreen(title: title)
         }

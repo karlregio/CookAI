@@ -68,6 +68,18 @@ final class SupabaseRecipeRepository: RecipeRepository {
         }
     }
 
+    /// Arguments of the `moderate_recipe` database function.
+    nonisolated private struct ModerateParams: Encodable {
+        let recipe: UUID
+        let status: String
+        let reason: String?
+        enum CodingKeys: String, CodingKey {
+            case recipe = "p_recipe"
+            case status = "p_status"
+            case reason = "p_reason"
+        }
+    }
+
     private struct RecipeInsert: Encodable {
         let id: UUID
         let title: String
@@ -301,6 +313,41 @@ final class SupabaseRecipeRepository: RecipeRepository {
                 .select()
                 .single()
                 .fetch()
+        }
+    }
+
+    // MARK: - Moderation (admin)
+    // Row Level Security lets only admins read flagged/removed recipes, and the
+    // `moderate_recipe` function re-checks the role, so a non-admin gets an
+    // empty list / an "Admins only" error even if they reach these calls.
+
+    func fetchModerationQueue(status: RecipeStatus) async throws -> [Recipe] {
+        _ = try requireUserId()
+        return try await run {
+            try await client.from("recipes").select()
+                .eq("source", value: RecipeSource.community.rawValue)
+                .eq("status", value: status.rawValue)
+                .order("created_at", ascending: false)
+                .fetch()
+        }
+    }
+
+    func fetchMyModerationActions() async throws -> [Recipe] {
+        let userId = try requireUserId()
+        return try await run {
+            try await client.from("recipes").select()
+                .eq("moderated_by", value: userId.uuidString)
+                .order("created_at", ascending: false)
+                .fetch()
+        }
+    }
+
+    func moderateRecipe(id: UUID, status: RecipeStatus, reason: String?) async throws -> Recipe {
+        _ = try requireUserId()
+        let trimmed = reason?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let params = ModerateParams(recipe: id, status: status.rawValue, reason: (trimmed?.isEmpty ?? true) ? nil : trimmed)
+        return try await run {
+            try await client.rpc("moderate_recipe", params: params).fetch()
         }
     }
 
