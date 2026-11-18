@@ -27,6 +27,10 @@ final class UploadRecipeController {
     let suggestedCuisines = ["Filipino", "Italian", "Japanese", "Mexican", "Indian", "American", "Thai", "Korean", "Mediterranean"]
 
     private let recipeRepository: RecipeRepository
+    /// Set when editing an existing recipe instead of publishing a new one.
+    private let editingRecipe: Recipe?
+    /// The current photo of the recipe being edited (kept unless a new one is picked).
+    let existingImageURL: URL?
 
     var title = ""
     var cuisine = ""
@@ -42,9 +46,26 @@ final class UploadRecipeController {
     private(set) var errorMessage: String?
     private(set) var publishedRecipe: Recipe?
 
-    init(services: ServiceContainer = .shared) {
+    init(editing recipe: Recipe? = nil, services: ServiceContainer = .shared) {
         self.recipeRepository = services.recipeRepository
+        self.editingRecipe = recipe
+        self.existingImageURL = recipe?.imageURL
+        if let recipe {
+            title = recipe.title
+            cuisine = recipe.cuisine
+            cookTimeText = String(recipe.cookTimeMinutes)
+            servingsText = String(recipe.servings)
+            difficulty = recipe.difficulty
+            ingredientRows = recipe.ingredients.map { IngredientRow(name: $0.name, quantity: $0.quantity) }
+            stepRows = recipe.steps.sorted { $0.order < $1.order }.map {
+                StepRow(text: $0.text, timerMinutes: $0.timerSeconds.map { String($0 / 60) } ?? "")
+            }
+            if ingredientRows.isEmpty { ingredientRows = [IngredientRow()] }
+            if stepRows.isEmpty { stepRows = [StepRow()] }
+        }
     }
+
+    var isEditing: Bool { editingRecipe != nil }
 
     // MARK: - Photo
 
@@ -95,7 +116,7 @@ final class UploadRecipeController {
 
     /// A user-facing reason the form can't be submitted yet, or nil if it is ready.
     private func validationProblem() -> String? {
-        if photoData == nil { return "Add a photo of your dish." }
+        if photoData == nil && editingRecipe == nil { return "Add a photo of your dish." }
         if trimmed(title).isEmpty { return "Give your recipe a name." }
         if trimmed(cuisine).isEmpty { return "Enter a cuisine, like Filipino or Thai." }
         guard let minutes = Int(trimmed(cookTimeText)), minutes > 0 else { return "Enter the cook time in minutes." }
@@ -114,8 +135,7 @@ final class UploadRecipeController {
             errorMessage = problem
             return
         }
-        guard let photoData,
-              let minutes = Int(trimmed(cookTimeText)),
+        guard let minutes = Int(trimmed(cookTimeText)),
               let servings = Int(trimmed(servingsText)) else { return }
 
         let ingredients = ingredientRows.compactMap { row -> Ingredient? in
@@ -141,7 +161,11 @@ final class UploadRecipeController {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
-            publishedRecipe = try await recipeRepository.uploadRecipe(draft, photo: photoData)
+            if let editingRecipe {
+                publishedRecipe = try await recipeRepository.updateRecipe(id: editingRecipe.id, draft: draft, newPhoto: photoData)
+            } else if let photoData {
+                publishedRecipe = try await recipeRepository.uploadRecipe(draft, photo: photoData)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -42,6 +42,7 @@ enum Route: Hashable {
     case aiGenerate
     case groceryList
     case uploadRecipe
+    case editRecipe(Recipe)
     case cookMode(Recipe)
     case notifications
     case conversations

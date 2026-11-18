@@ -86,6 +86,8 @@ private struct RouteDestinationView: View {
             AIGenerateScreen()
         case .uploadRecipe:
             UploadRecipeScreen()
+        case .editRecipe(let recipe):
+            UploadRecipeScreen(editing: recipe)
         case .groceryList:
             GroceryListScreen(showsBackButton: true)
         case .cookMode(let recipe):

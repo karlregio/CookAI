@@ -319,6 +319,24 @@ final class RecipeOverviewController {
         }
     }
 
+    // MARK: - Delete (owner)
+
+    private(set) var isDeleting = false
+
+    /// Permanently deletes this recipe. Returns true when it is gone.
+    func deleteRecipe() async -> Bool {
+        guard !isDeleting else { return false }
+        isDeleting = true
+        defer { isDeleting = false }
+        do {
+            try await recipeRepository.deleteRecipe(recipe)
+            return true
+        } catch {
+            showToast(error.localizedDescription)
+            return false
+        }
+    }
+
     // MARK: - Toast
 
     func showToast(_ message: String) {

@@ -37,6 +37,10 @@ struct RootView: View {
             if phase == .auth, auth.currentUser != nil {
                 router.completeSignIn()
             }
+            // Bring in the saved grocery list once the user is inside the app.
+            if phase == .main {
+                Task { await grocery.load() }
+            }
         }
         .onAppear {
             auth.onSignedOut = {

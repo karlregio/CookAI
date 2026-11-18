@@ -23,6 +23,7 @@ struct RecipeOverviewScreen: View {
     @State private var showFullscreenImage = false
     @State private var isRateSheetPresented = false
     @State private var showInstructions = false
+    @State private var showDeleteConfirm = false
 
     init(recipe: Recipe) {
         _controller = State(initialValue: RecipeOverviewController(recipe: recipe))
@@ -97,6 +98,20 @@ struct RecipeOverviewScreen: View {
         .toolbar(.hidden, for: .navigationBar)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: controller.toastMessage)
         .task { await controller.loadSecondaryContent() }
+        .confirmationDialog(
+            "Delete \"\(controller.recipe.title)\"?",
+            isPresented: $showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete recipe", role: .destructive) {
+                Task {
+                    if await controller.deleteRecipe() { router.pop() }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently removes the recipe, its comments and its photo.")
+        }
     }
 
     private func ingredientName(for id: UUID) -> String {
@@ -150,6 +165,7 @@ struct RecipeOverviewScreen: View {
                     CustomBackButton { router.pop() }
                     Spacer()
                     HStack(spacing: 8) {
+                        if isOwner { ownerMenu }
                         saveButton
                         shareButton
                     }
@@ -160,6 +176,33 @@ struct RecipeOverviewScreen: View {
             }
         }
         .frame(height: 338)
+    }
+
+    private var isOwner: Bool {
+        guard let me = auth.currentUser?.id else { return false }
+        return me == controller.recipe.uploaderId
+    }
+
+    private var ownerMenu: some View {
+        Menu {
+            Button {
+                router.push(.editRecipe(controller.recipe))
+            } label: {
+                Label("Edit recipe", systemImage: "pencil")
+            }
+            Button(role: .destructive) {
+                showDeleteConfirm = true
+            } label: {
+                Label("Delete recipe", systemImage: "trash")
+            }
+        } label: {
+            Image(systemName: controller.isDeleting ? "hourglass" : "ellipsis")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.charcoal)
+                .frame(width: 40, height: 40)
+                .background(Color.white.opacity(0.8), in: Circle())
+        }
+        .disabled(controller.isDeleting)
     }
 
     private var saveButton: some View {

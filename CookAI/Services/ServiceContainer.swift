@@ -17,19 +17,22 @@ final class ServiceContainer {
     let aiService: AIService
     let notificationService: NotificationService
     let messageService: MessageService
+    let groceryService: GroceryService
 
     init(
         authService: AuthService = SupabaseAuthService(),
         recipeRepository: RecipeRepository = SupabaseRecipeRepository(),
         aiService: AIService = SupabaseAIService(),
         notificationService: NotificationService = SupabaseNotificationService(),
-        messageService: MessageService = SupabaseMessageService()
+        messageService: MessageService = SupabaseMessageService(),
+        groceryService: GroceryService = SupabaseGroceryService()
     ) {
         self.authService = authService
         self.recipeRepository = recipeRepository
         self.aiService = aiService
         self.notificationService = notificationService
         self.messageService = messageService
+        self.groceryService = groceryService
     }
 }
 

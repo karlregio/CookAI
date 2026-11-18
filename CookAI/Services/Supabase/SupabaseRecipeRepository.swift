@@ -116,6 +116,23 @@ final class SupabaseRecipeRepository: RecipeRepository {
         }
     }
 
+    /// Fields an owner may change. `image_url` is omitted (nil) unless the photo was replaced.
+    nonisolated private struct RecipeUpdate: Encodable {
+        let title: String
+        let cuisine: String
+        let cookTimeMinutes: Int
+        let difficulty: Difficulty
+        let servings: Int
+        let imageURL: String?
+        let ingredients: [Ingredient]
+        let steps: [RecipeStep]
+        enum CodingKeys: String, CodingKey {
+            case title, cuisine, difficulty, servings, ingredients, steps
+            case cookTimeMinutes = "cook_time_minutes"
+            case imageURL = "image_url"
+        }
+    }
+
     // MARK: - Helpers
 
     private func requireUserId() throws -> UUID {
@@ -311,6 +328,63 @@ final class SupabaseRecipeRepository: RecipeRepository {
                 _ = try? await bucket.remove(paths: [path])
                 throw error
             }
+        }
+    }
+
+    /// The storage path of one of our own photos ("<user id>/<file>.jpg"), or nil for any other URL.
+    private func storagePath(of url: URL, owner: UUID) -> String? {
+        let marker = "/recipe-images/"
+        guard let range = url.absoluteString.range(of: marker) else { return nil }
+        let path = String(url.absoluteString[range.upperBound...])
+        return path.hasPrefix(owner.uuidString.lowercased() + "/") ? path : nil
+    }
+
+    func updateRecipe(id: UUID, draft: RecipeDraft, newPhoto: Data?) async throws -> Recipe {
+        let userId = try requireUserId()
+        let bucket = client.storage.from("recipe-images")
+        return try await run {
+            var newPath: String?
+            var newURL: String?
+            if let newPhoto {
+                let path = "\(userId.uuidString.lowercased())/\(UUID().uuidString.lowercased()).jpg"
+                _ = try await bucket.upload(path, data: newPhoto, options: FileOptions(contentType: "image/jpeg"))
+                newPath = path
+                newURL = try bucket.getPublicURL(path: path).absoluteString
+            }
+            let before = try await fetchRecipe(id: id)
+            do {
+                let updated: Recipe = try await client.from("recipes")
+                    .update(RecipeUpdate(
+                        title: draft.title, cuisine: draft.cuisine, cookTimeMinutes: draft.cookTimeMinutes,
+                        difficulty: draft.difficulty, servings: draft.servings, imageURL: newURL,
+                        ingredients: draft.ingredients, steps: draft.steps
+                    ))
+                    .eq("id", value: id.uuidString)
+                    .select()
+                    .single()
+                    .fetch()
+                // The old photo is no longer used.
+                if newURL != nil, let old = storagePath(of: before.imageURL, owner: userId) {
+                    _ = try? await bucket.remove(paths: [old])
+                }
+                return updated
+            } catch {
+                if let newPath { _ = try? await bucket.remove(paths: [newPath]) }
+                throw error
+            }
+        }
+    }
+
+    func deleteRecipe(_ recipe: Recipe) async throws {
+        let userId = try requireUserId()
+        try await run {
+            try await client.from("recipes")
+                .delete()
+                .eq("id", value: recipe.id.uuidString)
+                .execute()
+        }
+        if let path = storagePath(of: recipe.imageURL, owner: userId) {
+            _ = try? await client.storage.from("recipe-images").remove(paths: [path])
         }
     }
 

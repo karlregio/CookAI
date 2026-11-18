@@ -14,7 +14,27 @@ import Observation
 
 @Observable
 final class GroceryController {
+    private let groceryService: GroceryService
+
     private(set) var items: [GroceryItem] = []
+
+    init(services: ServiceContainer = .shared) {
+        self.groceryService = services.groceryService
+    }
+
+    /// Loads the signed-in user's saved list. Anything added before signing in
+    /// (as a guest) is saved to the account first, so it isn't lost.
+    func load() async {
+        let local = items
+        if !local.isEmpty { try? await groceryService.save(local) }
+        guard let saved = try? await groceryService.fetchItems() else { return }
+        items = saved
+    }
+
+    /// Fire-and-forget save; the list on screen is already updated.
+    private func sync(_ work: @escaping () async throws -> Void) {
+        Task { try? await work() }
+    }
 
     /// Adds each entry not already present (by lowercased, trimmed name).
     /// Returns the number of items actually added (after de-duplication).
@@ -22,12 +42,19 @@ final class GroceryController {
     func addItems(_ entries: [(name: String, category: String)], recipeTitle: String) -> Int {
         var existingNames = Set(items.map { $0.name.lowercased().trimmingCharacters(in: .whitespaces) })
         var addedCount = 0
+        var added: [GroceryItem] = []
         for entry in entries {
             let key = entry.name.lowercased().trimmingCharacters(in: .whitespaces)
             guard !key.isEmpty, !existingNames.contains(key) else { continue }
             existingNames.insert(key)
-            items.append(GroceryItem(id: UUID(), name: entry.name, recipeTitle: recipeTitle, category: entry.category, isChecked: false))
+            let item = GroceryItem(id: UUID(), name: entry.name, recipeTitle: recipeTitle, category: entry.category, isChecked: false)
+            items.append(item)
+            added.append(item)
             addedCount += 1
+        }
+        if !added.isEmpty {
+            let service = groceryService
+            sync { try await service.save(added) }
         }
         return addedCount
     }
@@ -45,18 +72,26 @@ final class GroceryController {
     func toggle(_ id: UUID) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
         items[index].isChecked.toggle()
+        let service = groceryService
+        let checked = items[index].isChecked
+        sync { try await service.setChecked(id: id, isChecked: checked) }
     }
 
     func remove(_ id: UUID) {
         items.removeAll { $0.id == id }
+        let service = groceryService
+        sync { try await service.delete(ids: [id]) }
     }
 
     func clearChecked() {
+        let ids = items.filter(\.isChecked).map(\.id)
         items.removeAll { $0.isChecked }
+        let service = groceryService
+        sync { try await service.delete(ids: ids) }
     }
 
-    /// Clears the whole list — called on sign-out so a different login
-    /// doesn't inherit the previous session's grocery list.
+    /// Clears the list on screen only — called on sign-out so a different login
+    /// doesn't inherit the previous session's list. The saved copy stays in the database.
     func clear() {
         items = []
     }

@@ -13,8 +13,15 @@ struct UploadRecipeScreen: View {
     @Environment(AppRouter.self) private var router
     @Environment(AuthController.self) private var auth
     @Environment(\.dismiss) private var dismiss
-    @State private var controller = UploadRecipeController()
+    @State private var controller: UploadRecipeController
     @State private var pickerItem: PhotosPickerItem?
+    private let isEditing: Bool
+
+    /// Pass a recipe to edit it; leave nil to share a new one.
+    init(editing recipe: Recipe? = nil) {
+        _controller = State(initialValue: UploadRecipeController(editing: recipe))
+        isEditing = recipe != nil
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,6 +38,8 @@ struct UploadRecipeScreen: View {
             guard let recipe else { return }
             // Replace this form with the new recipe so Back returns to Discover.
             router.pop()
+            // When editing, the old copy of the recipe sits underneath: replace it too.
+            if isEditing { router.pop() }
             router.push(.recipeOverview(recipe))
         }
     }
@@ -40,7 +49,7 @@ struct UploadRecipeScreen: View {
     private var header: some View {
         HStack(spacing: 12) {
             CustomBackButton { dismiss() }
-            Text("Share a recipe")
+            Text(isEditing ? "Edit recipe" : "Share a recipe")
                 .font(.lora(size: 22, weight: .semibold))
                 .foregroundStyle(Color.charcoal)
             Spacer()
@@ -110,6 +119,14 @@ struct UploadRecipeScreen: View {
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFill()
+                    } else if let url = controller.existingImageURL {
+                        AsyncImage(url: url) { phase in
+                            if case .success(let image) = phase {
+                                image.resizable().scaledToFill()
+                            } else {
+                                Color.cream
+                            }
+                        }
                     } else {
                         VStack(spacing: 8) {
                             Image(systemName: controller.isPreparingPhoto ? "hourglass" : "photo.badge.plus")
@@ -136,8 +153,13 @@ struct UploadRecipeScreen: View {
                 }
             }
 
+            if isEditing && controller.photoData == nil {
+                Text("Tap the photo to replace it.")
+                    .font(.outfit(size: 12))
+                    .foregroundStyle(Color.charcoalLight)
+            }
             if controller.photoData != nil {
-                Button("Remove photo") { controller.removePhoto() }
+                Button(isEditing ? "Keep the current photo" : "Remove photo") { controller.removePhoto() }
                     .font(.outfit(size: 12, weight: .medium))
                     .foregroundStyle(Color.terracottaDark)
             }
@@ -223,7 +245,7 @@ struct UploadRecipeScreen: View {
                 if controller.isSubmitting {
                     ProgressView().tint(.white)
                 }
-                Text(controller.isSubmitting ? "Publishing..." : "Publish recipe")
+                Text(controller.isSubmitting ? (isEditing ? "Saving..." : "Publishing...") : (isEditing ? "Save changes" : "Publish recipe"))
                     .font(.outfit(size: 15, weight: .semibold))
             }
             .foregroundStyle(.white)

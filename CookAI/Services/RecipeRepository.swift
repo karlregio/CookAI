@@ -33,6 +33,10 @@ protocol RecipeRepository: AnyObject {
     func fetchRecipes(byUploader id: UUID) async throws -> [Recipe]
     /// Publishes a community recipe with its photo and returns the saved recipe.
     func uploadRecipe(_ draft: RecipeDraft, photo: Data) async throws -> Recipe
+    /// Owner only: changes a recipe's details; the photo is replaced only when `newPhoto` is given.
+    func updateRecipe(id: UUID, draft: RecipeDraft, newPhoto: Data?) async throws -> Recipe
+    /// Owner only: permanently removes the recipe (and its photo).
+    func deleteRecipe(_ recipe: Recipe) async throws
     /// Stores an AI-generated recipe under the signed-in user so it can be
     /// liked, saved, rated and cooked. Guests get the recipe back unsaved.
     func saveGeneratedRecipe(_ recipe: Recipe) async throws -> Recipe
@@ -194,6 +198,26 @@ final class MockRecipeRepository: RecipeRepository {
         )
         recipes.insert(recipe, at: 0)
         return recipe
+    }
+
+    func updateRecipe(id: UUID, draft: RecipeDraft, newPhoto: Data?) async throws -> Recipe {
+        try await simulateNetworkDelay()
+        guard let index = recipes.firstIndex(where: { $0.id == id }) else {
+            throw RecipeRepositoryError.notFound
+        }
+        recipes[index].title = draft.title
+        recipes[index].cuisine = draft.cuisine
+        recipes[index].cookTimeMinutes = draft.cookTimeMinutes
+        recipes[index].difficulty = draft.difficulty
+        recipes[index].servings = draft.servings
+        recipes[index].ingredients = draft.ingredients
+        recipes[index].steps = draft.steps
+        return recipes[index]
+    }
+
+    func deleteRecipe(_ recipe: Recipe) async throws {
+        try await simulateNetworkDelay()
+        recipes.removeAll { $0.id == recipe.id }
     }
 
     func saveGeneratedRecipe(_ recipe: Recipe) async throws -> Recipe {
