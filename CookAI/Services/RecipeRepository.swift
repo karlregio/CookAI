@@ -29,6 +29,8 @@ protocol RecipeRepository: AnyObject {
     func addComment(recipeId: UUID, authorId: UUID, text: String) async throws -> RecipeComment
     /// Resolves uploader/attribution profiles referenced by recipes (e.g. Recipe.uploaderId).
     func fetchUsers(ids: [UUID]) async throws -> [User]
+    /// Publishes a community recipe with its photo and returns the saved recipe.
+    func uploadRecipe(_ draft: RecipeDraft, photo: Data) async throws -> Recipe
     /// Clears per-session mutable state (saved/liked ids, history, comments,
     /// like counts) back to the seeded defaults — but never touches the
     /// underlying MockData catalog itself, which is immutable value data.
@@ -160,6 +162,20 @@ final class MockRecipeRepository: RecipeRepository {
     func addHistoryEntry(_ entry: CookHistoryEntry) async throws {
         try await simulateNetworkDelay()
         history.append(entry)
+    }
+
+    func uploadRecipe(_ draft: RecipeDraft, photo: Data) async throws -> Recipe {
+        try await simulateNetworkDelay()
+        let recipe = Recipe(
+            id: UUID(), title: draft.title, cuisine: draft.cuisine, cookTimeMinutes: draft.cookTimeMinutes,
+            difficulty: draft.difficulty, servings: draft.servings,
+            imageURL: URL(string: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400&h=300&fit=crop&auto=format")!,
+            source: .community, status: .visible, moderationReason: nil, moderatedBy: nil,
+            uploaderId: MockData.alexUser.id, ingredients: draft.ingredients, steps: draft.steps,
+            ratingAverage: 0, ratingCount: 0, likeCount: 0, saveCount: 0, createdAt: Date()
+        )
+        recipes.insert(recipe, at: 0)
+        return recipe
     }
 
     func fetchComments(recipeId: UUID) async throws -> [RecipeComment] {

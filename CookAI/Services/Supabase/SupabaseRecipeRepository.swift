@@ -68,6 +68,26 @@ final class SupabaseRecipeRepository: RecipeRepository {
         }
     }
 
+    private struct RecipeInsert: Encodable {
+        let id: UUID
+        let title: String
+        let cuisine: String
+        let cookTimeMinutes: Int
+        let difficulty: Difficulty
+        let servings: Int
+        let imageURL: String
+        let source: String
+        let uploaderId: UUID
+        let ingredients: [Ingredient]
+        let steps: [RecipeStep]
+        enum CodingKeys: String, CodingKey {
+            case id, title, cuisine, difficulty, servings, source, ingredients, steps
+            case cookTimeMinutes = "cook_time_minutes"
+            case imageURL = "image_url"
+            case uploaderId = "uploader_id"
+        }
+    }
+
     // MARK: - Helpers
 
     private func requireUserId() throws -> UUID {
@@ -233,6 +253,36 @@ final class SupabaseRecipeRepository: RecipeRepository {
                 id: entry.id, userId: userId, recipeId: entry.recipeId,
                 cookedAt: entry.cookedAt, rating: entry.rating, note: entry.note
             )).execute()
+        }
+    }
+
+    // MARK: - Upload
+
+    func uploadRecipe(_ draft: RecipeDraft, photo: Data) async throws -> Recipe {
+        let userId = try requireUserId()
+        // The storage policy only allows writing inside a folder named after the user's id (lowercase).
+        let path = "\(userId.uuidString.lowercased())/\(UUID().uuidString.lowercased()).jpg"
+        let bucket = client.storage.from("recipe-images")
+        return try await run {
+            _ = try await bucket.upload(path, data: photo, options: FileOptions(contentType: "image/jpeg"))
+            let publicURL = try bucket.getPublicURL(path: path)
+            do {
+                return try await client.from("recipes")
+                    .insert(RecipeInsert(
+                        id: UUID(), title: draft.title, cuisine: draft.cuisine,
+                        cookTimeMinutes: draft.cookTimeMinutes, difficulty: draft.difficulty,
+                        servings: draft.servings, imageURL: publicURL.absoluteString,
+                        source: RecipeSource.community.rawValue, uploaderId: userId,
+                        ingredients: draft.ingredients, steps: draft.steps
+                    ))
+                    .select()
+                    .single()
+                    .fetch()
+            } catch {
+                // Don't leave an orphaned photo behind if the recipe row failed.
+                _ = try? await bucket.remove(paths: [path])
+                throw error
+            }
         }
     }
 

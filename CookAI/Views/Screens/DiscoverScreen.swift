@@ -5,7 +5,7 @@
 //  Discover tab root: recipes shared by other cooks. Search by dish, cuisine
 //  or @username, filter by cuisine, and tap any card to open its overview
 //  (where you can rate, comment, save and cook it). The "Share a recipe"
-//  button is the entry point for Upload, which is built next.
+//  button opens UploadRecipeScreen.
 //
 
 import SwiftUI
@@ -24,7 +24,8 @@ struct DiscoverScreen: View {
         }
         .background(Color.cream.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .task { await controller.load() }
+        // Also fires when returning from Upload, so a new recipe shows up right away.
+        .onAppear { Task { await controller.load() } }
         .onChange(of: router.selectedTab) { _, newTab in
             if newTab == .discover {
                 Task { await controller.load() }
@@ -46,7 +47,7 @@ struct DiscoverScreen: View {
             }
             Spacer()
             Button {
-                router.push(.comingSoon(title: "Share a Recipe"))
+                router.push(.uploadRecipe)
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
