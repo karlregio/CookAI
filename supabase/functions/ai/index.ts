@@ -6,6 +6,7 @@
 // Secrets (Supabase > Edge Functions > Secrets):
 //   GEMINI_API_KEY  required  your Google AI Studio key
 //   GEMINI_MODEL    optional  defaults to "gemini-flash-latest"
+//   GEMINI_FALLBACK_MODEL  optional  tried once if the main model is busy (429/500/503)
 //
 // Request:  POST { "action": "...", ...fields }   (signed-in users only)
 // Response: 200 { ...result }   or   4xx/5xx { "error": "friendly message" }
@@ -15,6 +16,7 @@
 export interface Env {
   geminiKey: string;
   model: string;
+  fallbackModel?: string;
   baseUrl: string;
 }
 
@@ -69,7 +71,6 @@ async function callGemini(
   fetchFn: typeof fetch,
   opts: { system: string; contents: { role: "user" | "model"; text: string }[]; json: boolean; temperature?: number },
 ): Promise<string> {
-  const url = `${env.baseUrl}/v1beta/models/${encodeURIComponent(env.model)}:generateContent`;
   const body = {
     systemInstruction: { parts: [{ text: opts.system }] },
     contents: opts.contents.map((c) => ({ role: c.role, parts: [{ text: c.text }] })),
@@ -79,13 +80,22 @@ async function callGemini(
     },
   };
 
-  let res: Response;
-  try {
-    res = await fetchFn(url, {
+  const send = (model: string) =>
+    fetchFn(`${env.baseUrl}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": env.geminiKey },
       body: JSON.stringify(body),
     });
+
+  let res: Response;
+  try {
+    res = await send(env.model);
+    // Busy or temporarily broken: try once more, on the backup model if there is one.
+    if ([429, 500, 503].includes(res.status)) {
+      console.warn(`Gemini ${res.status} on ${env.model}; retrying once`);
+      await new Promise((r) => setTimeout(r, 600));
+      res = await send(env.fallbackModel || env.model);
+    }
   } catch {
     throw new HttpError(502, "The AI service couldn't be reached. Please try again.");
   }
@@ -343,6 +353,7 @@ if (!Deno.env.get("COOKAI_TEST")) {
       {
         geminiKey: Deno.env.get("GEMINI_API_KEY") ?? "",
         model: Deno.env.get("GEMINI_MODEL") || "gemini-flash-latest",
+        fallbackModel: Deno.env.get("GEMINI_FALLBACK_MODEL") || undefined,
         baseUrl: "https://generativelanguage.googleapis.com",
       },
       fetch,
