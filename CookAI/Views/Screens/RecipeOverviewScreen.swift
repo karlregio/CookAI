@@ -47,6 +47,13 @@ struct RecipeOverviewScreen: View {
             }
             .ignoresSafeArea(edges: .top)
 
+            // Stays on screen while the page scrolls, so Back is always reachable.
+            VStack {
+                topBar
+                Spacer()
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+
             if let toastMessage = controller.toastMessage {
                 toast(toastMessage)
                     .padding(.horizontal, 20)
@@ -161,22 +168,22 @@ struct RecipeOverviewScreen: View {
             }
             .allowsHitTesting(false)
 
-            VStack {
-                HStack {
-                    CustomBackButton { router.pop() }
-                    Spacer()
-                    HStack(spacing: 8) {
-                        if isOwner { ownerMenu }
-                        saveButton
-                        shareButton
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 50)
-                Spacer()
-            }
         }
         .frame(height: 338)
+    }
+
+    private var topBar: some View {
+        HStack {
+            CustomBackButton { router.pop() }
+            Spacer()
+            HStack(spacing: 8) {
+                if isOwner { ownerMenu }
+                saveButton
+                shareButton
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
     }
 
     private var isOwner: Bool {
