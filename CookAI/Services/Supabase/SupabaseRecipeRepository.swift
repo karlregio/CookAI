@@ -286,6 +286,24 @@ final class SupabaseRecipeRepository: RecipeRepository {
         }
     }
 
+    func saveGeneratedRecipe(_ recipe: Recipe) async throws -> Recipe {
+        // Guests can still see their generated recipe; it just isn't stored.
+        guard let userId = client.auth.currentUser?.id else { return recipe }
+        return try await run {
+            try await client.from("recipes")
+                .insert(RecipeInsert(
+                    id: recipe.id, title: recipe.title, cuisine: recipe.cuisine,
+                    cookTimeMinutes: recipe.cookTimeMinutes, difficulty: recipe.difficulty,
+                    servings: recipe.servings, imageURL: recipe.imageURL.absoluteString,
+                    source: RecipeSource.aiGenerated.rawValue, uploaderId: userId,
+                    ingredients: recipe.ingredients, steps: recipe.steps
+                ))
+                .select()
+                .single()
+                .fetch()
+        }
+    }
+
     // MARK: - Comments
 
     func fetchComments(recipeId: UUID) async throws -> [RecipeComment] {

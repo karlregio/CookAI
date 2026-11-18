@@ -83,7 +83,7 @@ private struct RouteDestinationView: View {
         case .recipeOverview(let recipe):
             RecipeOverviewScreen(recipe: recipe)
         case .aiGenerate:
-            ComingSoonScreen(title: "AI Generate")
+            AIGenerateScreen()
         case .uploadRecipe:
             UploadRecipeScreen()
         case .groceryList:

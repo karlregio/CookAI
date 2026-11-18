@@ -300,7 +300,8 @@ final class RecipeOverviewController {
         regenerateErrorMessage = nil
         defer { isRegenerating = false }
         do {
-            let next = try await aiService.regenerateRecipe(from: recipe)
+            let generated = try await aiService.regenerateRecipe(from: recipe)
+            let next = try await recipeRepository.saveGeneratedRecipe(generated)
             recipe = next
             checkedIngredientIds = []
             substitutions = [:]

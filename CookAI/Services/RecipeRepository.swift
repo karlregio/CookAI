@@ -31,6 +31,9 @@ protocol RecipeRepository: AnyObject {
     func fetchUsers(ids: [UUID]) async throws -> [User]
     /// Publishes a community recipe with its photo and returns the saved recipe.
     func uploadRecipe(_ draft: RecipeDraft, photo: Data) async throws -> Recipe
+    /// Stores an AI-generated recipe under the signed-in user so it can be
+    /// liked, saved, rated and cooked. Guests get the recipe back unsaved.
+    func saveGeneratedRecipe(_ recipe: Recipe) async throws -> Recipe
     /// Clears per-session mutable state (saved/liked ids, history, comments,
     /// like counts) back to the seeded defaults — but never touches the
     /// underlying MockData catalog itself, which is immutable value data.
@@ -175,6 +178,14 @@ final class MockRecipeRepository: RecipeRepository {
             ratingAverage: 0, ratingCount: 0, likeCount: 0, saveCount: 0, createdAt: Date()
         )
         recipes.insert(recipe, at: 0)
+        return recipe
+    }
+
+    func saveGeneratedRecipe(_ recipe: Recipe) async throws -> Recipe {
+        try await simulateNetworkDelay()
+        if !recipes.contains(where: { $0.id == recipe.id }) {
+            recipes.append(recipe)
+        }
         return recipe
     }
 
