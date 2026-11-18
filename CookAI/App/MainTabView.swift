@@ -96,6 +96,10 @@ private struct RouteDestinationView: View {
             ComingSoonScreen(title: "Messages")
         case .adminDashboard:
             AdminDashboardScreen()
+        case .adminRecipes:
+            AdminRecipesScreen()
+        case .adminRecipeDetail(let recipe):
+            AdminRecipeDetailScreen(recipe: recipe)
         case .comingSoon(let title):
             ComingSoonScreen(title: title)
         }

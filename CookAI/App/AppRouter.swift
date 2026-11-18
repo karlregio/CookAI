@@ -46,6 +46,8 @@ enum Route: Hashable {
     case notifications
     case conversations
     case adminDashboard
+    case adminRecipes
+    case adminRecipeDetail(Recipe)
     case comingSoon(title: String)
 }
 

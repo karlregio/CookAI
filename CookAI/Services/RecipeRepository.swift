@@ -34,8 +34,12 @@ protocol RecipeRepository: AnyObject {
     /// Stores an AI-generated recipe under the signed-in user so it can be
     /// liked, saved, rated and cooked. Guests get the recipe back unsaved.
     func saveGeneratedRecipe(_ recipe: Recipe) async throws -> Recipe
-    /// Admin only (the database enforces it): community recipes with this status, newest first.
-    func fetchModerationQueue(status: RecipeStatus) async throws -> [Recipe]
+    /// Admin only (the database enforces it): every community recipe, whatever its status, newest first.
+    func fetchCommunityForModeration() async throws -> [Recipe]
+    /// Admin only: live counts for the dashboard cards.
+    func fetchAdminStats() async throws -> AdminStats
+    /// Admin only: uploaders' email addresses (hidden from everyone else).
+    func fetchUserEmails(ids: [UUID]) async throws -> [UUID: String]
     /// Admin only: recipes the signed-in admin has approved, flagged or removed, newest first.
     func fetchMyModerationActions() async throws -> [Recipe]
     /// Admin only: Approve = `.visible`; `.flagged` and `.removed` need a non-empty reason.
@@ -196,9 +200,28 @@ final class MockRecipeRepository: RecipeRepository {
         return recipe
     }
 
-    func fetchModerationQueue(status: RecipeStatus) async throws -> [Recipe] {
+    func fetchCommunityForModeration() async throws -> [Recipe] {
         try await simulateNetworkDelay()
-        return recipes.filter { $0.source == .community && $0.status == status }
+        return recipes.filter { $0.source == .community }.sorted { $0.createdAt > $1.createdAt }
+    }
+
+    func fetchAdminStats() async throws -> AdminStats {
+        try await simulateNetworkDelay()
+        return AdminStats(
+            totalUsers: MockData.allUsers.count, usersToday: 0,
+            totalRecipes: recipes.count, recipesToday: 0,
+            recipesThisWeek: recipes.filter { $0.source != .library }.count,
+            flagged: recipes.filter { $0.status == .flagged }.count
+        )
+    }
+
+    func fetchUserEmails(ids: [UUID]) async throws -> [UUID: String] {
+        try await simulateNetworkDelay()
+        let wanted = Set(ids)
+        return Dictionary(
+            MockData.allUsers.filter { wanted.contains($0.id) }.map { ($0.id, $0.email) },
+            uniquingKeysWith: { first, _ in first }
+        )
     }
 
     func fetchMyModerationActions() async throws -> [Recipe] {

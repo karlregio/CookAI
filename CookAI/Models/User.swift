@@ -35,3 +35,21 @@ struct User: Codable, Identifiable, Hashable {
         case totalLikes = "total_likes"
     }
 }
+
+extension User {
+    /// The database hides the `email` column from everyone but the owner/admins, so
+    /// profiles loaded for other people arrive without it. Missing means empty.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        username = try c.decode(String.self, forKey: .username)
+        displayName = try c.decode(String.self, forKey: .displayName)
+        email = try c.decodeIfPresent(String.self, forKey: .email) ?? ""
+        role = try c.decode(UserRole.self, forKey: .role)
+        avatarColorHex = try c.decode(String.self, forKey: .avatarColorHex)
+        bio = try c.decode(String.self, forKey: .bio)
+        isVerified = try c.decode(Bool.self, forKey: .isVerified)
+        recipesCount = try c.decode(Int.self, forKey: .recipesCount)
+        totalLikes = try c.decode(Int.self, forKey: .totalLikes)
+    }
+}

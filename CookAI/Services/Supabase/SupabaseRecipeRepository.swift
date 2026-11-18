@@ -68,6 +68,22 @@ final class SupabaseRecipeRepository: RecipeRepository {
         }
     }
 
+    nonisolated private struct NoArgs: Encodable {}
+
+    nonisolated private struct EmailParams: Encodable {
+        let ids: [UUID]
+        enum CodingKeys: String, CodingKey { case ids = "p_ids" }
+    }
+
+    nonisolated private struct EmailRow: Decodable {
+        let userId: UUID
+        let userEmail: String
+        enum CodingKeys: String, CodingKey {
+            case userId = "user_id"
+            case userEmail = "user_email"
+        }
+    }
+
     /// Arguments of the `moderate_recipe` database function.
     nonisolated private struct ModerateParams: Encodable {
         let recipe: UUID
@@ -321,15 +337,31 @@ final class SupabaseRecipeRepository: RecipeRepository {
     // `moderate_recipe` function re-checks the role, so a non-admin gets an
     // empty list / an "Admins only" error even if they reach these calls.
 
-    func fetchModerationQueue(status: RecipeStatus) async throws -> [Recipe] {
+    func fetchCommunityForModeration() async throws -> [Recipe] {
         _ = try requireUserId()
         return try await run {
             try await client.from("recipes").select()
                 .eq("source", value: RecipeSource.community.rawValue)
-                .eq("status", value: status.rawValue)
                 .order("created_at", ascending: false)
                 .fetch()
         }
+    }
+
+    func fetchAdminStats() async throws -> AdminStats {
+        _ = try requireUserId()
+        return try await run {
+            try await client.rpc("admin_stats", params: NoArgs()).fetch()
+        }
+    }
+
+    func fetchUserEmails(ids: [UUID]) async throws -> [UUID: String] {
+        _ = try requireUserId()
+        let unique = Array(Set(ids))
+        guard !unique.isEmpty else { return [:] }
+        let rows: [EmailRow] = try await run {
+            try await client.rpc("admin_user_emails", params: EmailParams(ids: unique)).fetch()
+        }
+        return Dictionary(rows.map { ($0.userId, $0.userEmail) }, uniquingKeysWith: { first, _ in first })
     }
 
     func fetchMyModerationActions() async throws -> [Recipe] {
@@ -379,7 +411,7 @@ final class SupabaseRecipeRepository: RecipeRepository {
         let unique = Array(Set(ids))
         guard !unique.isEmpty else { return [] }
         return try await run {
-            try await client.from("profiles").select()
+            try await client.from("profiles").select(SupabaseConfig.profileColumns)
                 .in("id", values: unique.map(\.uuidString))
                 .fetch()
         }

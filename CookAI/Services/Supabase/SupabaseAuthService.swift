@@ -21,7 +21,7 @@ final class SupabaseAuthService: AuthService {
     func restoreSession() async -> CookAIUser? {
         do {
             let session = try await client.auth.session
-            let user = try await fetchProfile(id: session.user.id)
+            let user = try await fetchProfile(id: session.user.id, email: session.user.email)
             currentUser = user
             return user
         } catch {
@@ -37,7 +37,7 @@ final class SupabaseAuthService: AuthService {
         }
         do {
             let session = try await client.auth.signIn(email: trimmedEmail, password: password)
-            let user = try await fetchProfile(id: session.user.id)
+            let user = try await fetchProfile(id: session.user.id, email: session.user.email)
             currentUser = user
             return user
         } catch {
@@ -70,7 +70,7 @@ final class SupabaseAuthService: AuthService {
                     throw SupabaseServiceError.confirmEmail
                 }
             }
-            let user = try await fetchProfile(id: session.user.id)
+            let user = try await fetchProfile(id: session.user.id, email: session.user.email)
             currentUser = user
             return user
         } catch {
@@ -89,16 +89,18 @@ final class SupabaseAuthService: AuthService {
 
     // MARK: - Helpers
 
-    private func fetchProfile(id: UUID) async throws -> CookAIUser {
+    private func fetchProfile(id: UUID, email: String?) async throws -> CookAIUser {
         let profiles: [CookAIUser] = try await client
             .from("profiles")
-            .select()
+            .select(SupabaseConfig.profileColumns)
             .eq("id", value: id.uuidString)
             .limit(1)
             .fetch()
-        guard let profile = profiles.first else {
+        guard var profile = profiles.first else {
             throw SupabaseServiceError.profileMissing
         }
+        // Your own email comes from your login session, not the profiles table.
+        if let email, !email.isEmpty { profile.email = email }
         return profile
     }
 

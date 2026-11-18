@@ -15,6 +15,11 @@ enum SupabaseConfig {
     static let publishableKey = "sb_publishable_IkELxQ1CHct8DZ_KPo5vBg_oYau2l5h"
 
     static let client = SupabaseClient(supabaseURL: url, supabaseKey: publishableKey)
+
+    /// Profile columns the app may read. `email` is deliberately absent: the
+    /// database hides it from everyone except the owner and admins, so
+    /// `select()` (= every column) would be refused.
+    static let profileColumns = "id, username, display_name, role, avatar_color_hex, bio, is_verified, recipes_count, total_likes"
 }
 
 /// User-facing errors shared by the Supabase-backed services.

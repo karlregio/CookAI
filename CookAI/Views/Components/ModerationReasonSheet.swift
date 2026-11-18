@@ -3,8 +3,8 @@
 //  CookAI
 //
 //  Asks the admin for the reason before a recipe is flagged or removed. The
-//  reason is required (the database enforces it too) and is shown to the cook
-//  in their notification.
+//  reason is required (the database enforces it too) and is shown to the
+//  uploader in their notification.
 //
 
 import SwiftUI
@@ -21,6 +21,7 @@ struct ModerationReasonSheet: View {
 
     private var isRemoving: Bool { status == .removed }
     private var trimmedReason: String { reason.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var accent: Color { isRemoving ? Color(hex: "#9C2B2B") : Color(hex: "#B8860B") }
 
     private var presets: [String] {
         isRemoving
@@ -35,41 +36,66 @@ struct ModerationReasonSheet: View {
                 .frame(width: 40, height: 4)
                 .frame(maxWidth: .infinity)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(isRemoving ? "Remove recipe" : "Flag recipe")
-                    .font(.lora(size: 20, weight: .semibold))
-                    .foregroundStyle(Color.charcoal)
-                Text("“\(recipeTitle)”")
-                    .font(.outfit(size: 13))
-                    .foregroundStyle(Color.charcoalLight)
-                    .lineLimit(2)
-            }
-
-            Text("The cook will see your reason in their notifications.")
-                .font(.outfit(size: 13))
-                .foregroundStyle(Color.charcoalMid)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(presets, id: \.self) { preset in
-                        CategoryChip(title: preset, isActive: reason == preset) {
-                            reason = preset
-                        }
-                    }
+            HStack(spacing: 12) {
+                Image(systemName: isRemoving ? "trash" : "flag")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(accent)
+                    .frame(width: 36, height: 36)
+                    .background(accent.opacity(0.14), in: Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isRemoving ? "Remove this recipe" : "Flag this recipe")
+                        .font(.lora(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.charcoal)
+                    Text(isRemoving
+                         ? "This will hide the recipe from all users. The uploader is notified with your reason."
+                         : "The uploader will be notified with your reason.")
+                        .font(.outfit(size: 12))
+                        .foregroundStyle(Color.charcoalLight)
                 }
             }
 
-            TextField("Write the reason…", text: $reason, axis: .vertical)
-                .font(.outfit(size: 14))
-                .lineLimit(3...6)
-                .padding(12)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.creamBorder, lineWidth: 1))
+            Text("“\(recipeTitle)”")
+                .font(.outfit(size: 13, weight: .medium))
+                .foregroundStyle(Color.charcoalMid)
+                .lineLimit(2)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 2) {
+                    Text("Reason")
+                    Text("*").foregroundStyle(accent)
+                }
+                .font(.outfit(size: 13, weight: .semibold))
+                .foregroundStyle(Color.charcoalMid)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(presets, id: \.self) { preset in
+                            CategoryChip(title: preset, isActive: reason == preset) {
+                                reason = preset
+                            }
+                        }
+                    }
+                }
+
+                TextField(isRemoving ? "Explain why you're removing this recipe…" : "Explain why you're flagging this recipe…",
+                          text: $reason, axis: .vertical)
+                    .font(.outfit(size: 14))
+                    .lineLimit(3...6)
+                    .padding(12)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.creamBorder, lineWidth: 1))
+
+                if trimmedReason.isEmpty {
+                    Text("Required before confirming")
+                        .font(.outfit(size: 11))
+                        .foregroundStyle(Color.charcoalPale)
+                }
+            }
 
             if let errorMessage {
                 Text(errorMessage)
                     .font(.outfit(size: 13))
-                    .foregroundStyle(Color.terracottaDark)
+                    .foregroundStyle(Color(hex: "#9C2B2B"))
             }
 
             HStack(spacing: 10) {
@@ -79,7 +105,7 @@ struct ModerationReasonSheet: View {
                         .foregroundStyle(Color.charcoalMid)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .overlay(Capsule().stroke(Color.creamBorder, lineWidth: 1))
+                        .overlay(Capsule().stroke(Color.creamBorder, lineWidth: 1.5))
                 }
                 .buttonStyle(.plain)
 
@@ -94,7 +120,7 @@ struct ModerationReasonSheet: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(trimmedReason.isEmpty ? Color.charcoalPale : Color.terracotta, in: Capsule())
+                    .background(trimmedReason.isEmpty ? Color.charcoalPale : accent, in: Capsule())
                 }
                 .buttonStyle(.plain)
                 .disabled(trimmedReason.isEmpty || isWorking)
