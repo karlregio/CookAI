@@ -31,7 +31,7 @@ struct StepIllustrationView: View {
                 animatedIllustration
             }
         }
-        .frame(width: 90, height: 70)
+        .frame(width: 130, height: 100)
     }
 
     @ViewBuilder
@@ -62,35 +62,97 @@ struct StepIllustrationView: View {
     }
 }
 
-// MARK: - Boil (rising, fading bubbles)
+// MARK: - Shared pot drawing
+
+/// A cooking pot: body with rounded bottom, two side handles and a rim.
+private struct PotView: View {
+    var width: CGFloat = 78
+    var height: CGFloat = 44
+
+    private var body_: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(topLeadingRadius: 4, bottomLeadingRadius: 16, bottomTrailingRadius: 16, topTrailingRadius: 4, style: .continuous)
+    }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            HStack {
+                Capsule().fill(Color.terracotta).frame(width: 12, height: 6)
+                Spacer()
+                Capsule().fill(Color.terracotta).frame(width: 12, height: 6)
+            }
+            .frame(width: width + 28)
+            .offset(y: 12)
+
+            body_
+                .fill(Color.terracotta.opacity(0.22))
+                .overlay(body_.stroke(Color.terracotta, lineWidth: 2))
+                .frame(width: width, height: height)
+
+            Capsule()
+                .fill(Color.terracotta)
+                .frame(width: width + 8, height: 5)
+        }
+        .frame(width: width + 28, height: height)
+    }
+}
+
+// MARK: - Boil (pot with rising bubbles, steam and flames)
 
 private struct BoilIllustration: View {
     @State private var animate = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.terracotta.opacity(0.2))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color.terracotta, lineWidth: 2))
-                .frame(width: 64, height: 34)
-
-            HStack(spacing: 10) {
-                bubble(delay: 0)
-                bubble(delay: 0.25)
-                bubble(delay: 0.5)
+        VStack(spacing: 4) {
+            HStack(spacing: 14) {
+                wisp(delay: 0)
+                wisp(delay: 0.5)
+                wisp(delay: 1.0)
             }
-            .padding(.bottom, 10)
+            .frame(height: 20)
+
+            ZStack {
+                PotView()
+                HStack(spacing: 12) {
+                    bubble(size: 7, delay: 0)
+                    bubble(size: 5, delay: 0.35)
+                    bubble(size: 8, delay: 0.7)
+                }
+                .offset(y: 6)
+            }
+
+            HStack(spacing: 8) {
+                flame(delay: 0)
+                flame(delay: 0.2)
+                flame(delay: 0.4)
+            }
         }
         .onAppear { animate = true }
     }
 
-    private func bubble(delay: Double) -> some View {
+    private func bubble(size: CGFloat, delay: Double) -> some View {
         Circle()
-            .fill(Color.terracotta.opacity(0.5))
-            .frame(width: 6, height: 6)
-            .offset(y: animate ? -16 : 0)
+            .stroke(Color.cream.opacity(0.85), lineWidth: 1.5)
+            .frame(width: size, height: size)
+            .offset(y: animate ? -22 : 8)
             .opacity(animate ? 0 : 1)
-            .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: false).delay(delay), value: animate)
+            .animation(.easeIn(duration: 1.2).repeatForever(autoreverses: false).delay(delay), value: animate)
+    }
+
+    private func wisp(delay: Double) -> some View {
+        Capsule()
+            .fill(Color.cream.opacity(0.5))
+            .frame(width: 4, height: 14)
+            .offset(y: animate ? -8 : 6)
+            .opacity(animate ? 0 : 0.7)
+            .animation(.easeOut(duration: 1.4).repeatForever(autoreverses: false).delay(delay), value: animate)
+    }
+
+    private func flame(delay: Double) -> some View {
+        Image(systemName: "flame.fill")
+            .font(.system(size: 14))
+            .foregroundStyle(Color.terracotta)
+            .scaleEffect(animate ? 1.15 : 0.85)
+            .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(delay), value: animate)
     }
 }
 
@@ -202,34 +264,45 @@ private struct TomatoIllustration: View {
     }
 }
 
-// MARK: - Simmer (looping steam wisps)
+// MARK: - Simmer (covered pot, slow steam, low flame)
 
 private struct SimmerIllustration: View {
     @State private var animate = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.terracotta.opacity(0.2))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color.terracotta, lineWidth: 2))
-                .frame(width: 62, height: 32)
-
-            HStack(spacing: 16) {
-                steamWisp(delay: 0)
-                steamWisp(delay: 0.6)
+        VStack(spacing: 4) {
+            HStack(spacing: 22) {
+                wisp(delay: 0)
+                wisp(delay: 0.7)
             }
-            .offset(y: -32)
+            .frame(height: 20)
+
+            ZStack(alignment: .top) {
+                PotView()
+                // Lid with a knob.
+                VStack(spacing: 0) {
+                    Circle().fill(Color.terracotta).frame(width: 7, height: 7)
+                    Capsule().fill(Color.terracotta.opacity(0.55)).frame(width: 76, height: 7)
+                }
+                .offset(y: -9)
+            }
+
+            Image(systemName: "flame.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(Color.terracotta)
+                .scaleEffect(animate ? 1.1 : 0.9)
+                .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: animate)
         }
         .onAppear { animate = true }
     }
 
-    private func steamWisp(delay: Double) -> some View {
+    private func wisp(delay: Double) -> some View {
         Capsule()
             .fill(Color.cream.opacity(0.4))
             .frame(width: 4, height: 16)
-            .offset(y: animate ? -14 : 6)
+            .offset(y: animate ? -10 : 6)
             .opacity(animate ? 0 : 0.8)
-            .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: false).delay(delay), value: animate)
+            .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: false).delay(delay), value: animate)
     }
 }
 
