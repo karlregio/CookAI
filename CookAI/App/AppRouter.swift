@@ -46,7 +46,9 @@ enum Route: Hashable {
     case notifications
     case conversations
     case adminDashboard
-    case adminRecipes
+    case adminUsers
+    /// Recipe Management, optionally opened on a status filter and/or a search (e.g. one uploader).
+    case adminRecipes(status: RecipeStatus?, search: String?)
     case adminRecipeDetail(Recipe)
     case comingSoon(title: String)
 }

@@ -13,13 +13,18 @@ import SwiftUI
 struct AdminRecipesScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppRouter.self) private var router
-    @State private var controller = AdminRecipesController()
+    @State private var controller: AdminRecipesController
     @State private var pendingAction: PendingAction?
 
     private struct PendingAction: Identifiable {
         let recipe: Recipe
         let status: RecipeStatus
         var id: String { "\(recipe.id.uuidString)-\(status.rawValue)" }
+    }
+
+    /// Opens on an optional status filter and/or search text (e.g. one uploader's recipes).
+    init(status: RecipeStatus? = nil, search: String? = nil) {
+        _controller = State(initialValue: AdminRecipesController(status: status, search: search))
     }
 
     var body: some View {

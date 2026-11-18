@@ -354,6 +354,14 @@ final class SupabaseRecipeRepository: RecipeRepository {
         }
     }
 
+    func fetchAllUsers() async throws -> [CookAIUser] {
+        try await run {
+            try await client.from("profiles").select(SupabaseConfig.profileColumns)
+                .order("created_at", ascending: false)
+                .fetch()
+        }
+    }
+
     func fetchUserEmails(ids: [UUID]) async throws -> [UUID: String] {
         _ = try requireUserId()
         let unique = Array(Set(ids))

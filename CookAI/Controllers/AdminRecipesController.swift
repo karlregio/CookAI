@@ -45,9 +45,13 @@ final class AdminRecipesController {
     var searchText = ""
     var selectedFilter: StatusFilter = .all
 
-    init(services: ServiceContainer = .shared) {
+    init(status: RecipeStatus? = nil, search: String? = nil, services: ServiceContainer = .shared) {
         self.recipeRepository = services.recipeRepository
         self.authService = services.authService
+        if let status {
+            self.selectedFilter = StatusFilter.allCases.first { $0.status == status } ?? .all
+        }
+        self.searchText = search ?? ""
     }
 
     var isAdmin: Bool { authService.currentUser?.role == .admin }

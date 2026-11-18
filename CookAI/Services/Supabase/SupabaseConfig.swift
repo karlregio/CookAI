@@ -19,7 +19,7 @@ enum SupabaseConfig {
     /// Profile columns the app may read. `email` is deliberately absent: the
     /// database hides it from everyone except the owner and admins, so
     /// `select()` (= every column) would be refused.
-    static let profileColumns = "id, username, display_name, role, avatar_color_hex, bio, is_verified, recipes_count, total_likes"
+    static let profileColumns = "id, username, display_name, role, avatar_color_hex, bio, is_verified, recipes_count, total_likes, created_at"
 }
 
 /// User-facing errors shared by the Supabase-backed services.

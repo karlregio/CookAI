@@ -65,26 +65,40 @@ struct AdminDashboardScreen: View {
         let value: Int
         let label: String
         let note: String
+        let route: Route
         var urgent = false
     }
 
     private func cards(for stats: AdminStats) -> [StatCard] {
         [
-            StatCard(id: "users", icon: "👥", value: stats.totalUsers, label: "Total Users", note: "+\(stats.usersToday) today"),
-            StatCard(id: "recipes", icon: "🍽", value: stats.totalRecipes, label: "Total Recipes", note: "+\(stats.recipesToday) today"),
-            StatCard(id: "week", icon: "📅", value: stats.recipesThisWeek, label: "This Week", note: "recipes submitted"),
+            StatCard(id: "users", icon: "👥", value: stats.totalUsers, label: "Total Users",
+                     note: "+\(stats.usersToday) today", route: .adminUsers),
+            StatCard(id: "recipes", icon: "🍽", value: stats.totalRecipes, label: "Total Recipes",
+                     note: "+\(stats.recipesToday) today", route: .adminRecipes(status: nil, search: nil)),
+            StatCard(id: "week", icon: "📅", value: stats.recipesThisWeek, label: "This Week",
+                     note: "recipes submitted", route: .adminRecipes(status: nil, search: nil)),
             StatCard(id: "flagged", icon: "🚩", value: stats.flagged, label: "Flagged",
-                     note: stats.flagged > 0 ? "needs review" : "all clear", urgent: stats.flagged > 0),
+                     note: stats.flagged > 0 ? "needs review" : "all clear",
+                     route: .adminRecipes(status: .flagged, search: nil), urgent: stats.flagged > 0),
         ]
     }
 
     private func statGrid(_ stats: AdminStats) -> some View {
         LazyVGrid(columns: gridColumns, spacing: 12) {
             ForEach(cards(for: stats)) { card in
+                Button {
+                    router.push(card.route)
+                } label: {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(card.icon)
-                        .font(.system(size: 24))
-                        .padding(.bottom, 8)
+                    HStack(alignment: .top) {
+                        Text(card.icon)
+                            .font(.system(size: 24))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.charcoalPale)
+                    }
+                    .padding(.bottom, 8)
                     Text("\(card.value)")
                         .font(.outfit(size: 24, weight: .bold))
                         .foregroundStyle(Color.charcoal)
@@ -105,6 +119,8 @@ struct AdminDashboardScreen: View {
                         .stroke(Color.terracotta.opacity(card.urgent ? 0.25 : 0), lineWidth: 1)
                 )
                 .softShadow()
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -119,7 +135,7 @@ struct AdminDashboardScreen: View {
                     .foregroundStyle(Color.charcoal)
                 Spacer()
                 Button {
-                    router.push(.adminRecipes)
+                    router.push(.adminRecipes(status: nil, search: nil))
                 } label: {
                     Text("See all →")
                         .font(.outfit(size: 14, weight: .semibold))
@@ -203,7 +219,7 @@ struct AdminDashboardScreen: View {
 
     private var manageButton: some View {
         Button {
-            router.push(.adminRecipes)
+            router.push(.adminRecipes(status: nil, search: nil))
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "square.grid.2x2")

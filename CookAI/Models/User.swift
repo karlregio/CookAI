@@ -21,6 +21,8 @@ struct User: Codable, Identifiable, Hashable {
     var isVerified: Bool
     var recipesCount: Int
     var totalLikes: Int
+    /// When the account was created (nil for sample data).
+    var createdAt: Date? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -33,6 +35,7 @@ struct User: Codable, Identifiable, Hashable {
         case isVerified = "is_verified"
         case recipesCount = "recipes_count"
         case totalLikes = "total_likes"
+        case createdAt = "created_at"
     }
 }
 
@@ -51,5 +54,6 @@ extension User {
         isVerified = try c.decode(Bool.self, forKey: .isVerified)
         recipesCount = try c.decode(Int.self, forKey: .recipesCount)
         totalLikes = try c.decode(Int.self, forKey: .totalLikes)
+        createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt)
     }
 }

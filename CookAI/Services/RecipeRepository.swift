@@ -38,6 +38,8 @@ protocol RecipeRepository: AnyObject {
     func fetchCommunityForModeration() async throws -> [Recipe]
     /// Admin only: live counts for the dashboard cards.
     func fetchAdminStats() async throws -> AdminStats
+    /// Every account, newest first (names and stats only; emails stay hidden).
+    func fetchAllUsers() async throws -> [User]
     /// Admin only: uploaders' email addresses (hidden from everyone else).
     func fetchUserEmails(ids: [UUID]) async throws -> [UUID: String]
     /// Admin only: recipes the signed-in admin has approved, flagged or removed, newest first.
@@ -213,6 +215,11 @@ final class MockRecipeRepository: RecipeRepository {
             recipesThisWeek: recipes.filter { $0.source != .library }.count,
             flagged: recipes.filter { $0.status == .flagged }.count
         )
+    }
+
+    func fetchAllUsers() async throws -> [User] {
+        try await simulateNetworkDelay()
+        return MockData.allUsers
     }
 
     func fetchUserEmails(ids: [UUID]) async throws -> [UUID: String] {
