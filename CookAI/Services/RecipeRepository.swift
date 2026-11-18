@@ -27,6 +27,8 @@ protocol RecipeRepository: AnyObject {
     func addHistoryEntry(_ entry: CookHistoryEntry) async throws
     func fetchComments(recipeId: UUID) async throws -> [RecipeComment]
     func addComment(recipeId: UUID, authorId: UUID, text: String) async throws -> RecipeComment
+    /// Author (or admin) only: removes a comment.
+    func deleteComment(id: UUID) async throws
     /// Resolves uploader/attribution profiles referenced by recipes (e.g. Recipe.uploaderId).
     func fetchUsers(ids: [UUID]) async throws -> [User]
     /// A cook's visible, shared recipes (community + AI-generated, never removed ones), newest first.
@@ -283,6 +285,13 @@ final class MockRecipeRepository: RecipeRepository {
         let comment = RecipeComment(id: UUID(), recipeId: recipeId, authorId: authorId, text: text, createdAt: Date())
         commentsByRecipe[recipeId, default: []].append(comment)
         return comment
+    }
+
+    func deleteComment(id: UUID) async throws {
+        try await simulateNetworkDelay()
+        for key in commentsByRecipe.keys {
+            commentsByRecipe[key]?.removeAll { $0.id == id }
+        }
     }
 
     func fetchUsers(ids: [UUID]) async throws -> [User] {

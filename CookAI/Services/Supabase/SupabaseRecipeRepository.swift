@@ -486,6 +486,16 @@ final class SupabaseRecipeRepository: RecipeRepository {
         }
     }
 
+    func deleteComment(id: UUID) async throws {
+        _ = try requireUserId()
+        try await run {
+            try await client.from("comments")
+                .delete()
+                .eq("id", value: id.uuidString)
+                .execute()
+        }
+    }
+
     // MARK: - Users
 
     func fetchUsers(ids: [UUID]) async throws -> [CookAIUser] {

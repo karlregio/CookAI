@@ -24,6 +24,7 @@ struct RecipeOverviewScreen: View {
     @State private var isRateSheetPresented = false
     @State private var showInstructions = false
     @State private var showDeleteConfirm = false
+    @State private var commentToDelete: RecipeComment?
 
     init(recipe: Recipe) {
         _controller = State(initialValue: RecipeOverviewController(recipe: recipe))
@@ -870,17 +871,31 @@ struct RecipeOverviewScreen: View {
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-            } else if let error = controller.commentsErrorMessage {
-                Text(error)
-                    .font(.outfit(size: 12))
-                    .foregroundStyle(Color.terracottaDark)
             } else {
+                if let error = controller.commentsErrorMessage {
+                    Text(error)
+                        .font(.outfit(size: 12))
+                        .foregroundStyle(Color.terracottaDark)
+                }
                 VStack(spacing: 12) {
                     ForEach(controller.comments) { comment in
                         commentRow(comment)
                     }
                 }
             }
+        }
+        .confirmationDialog(
+            "Delete this comment?",
+            isPresented: Binding(get: { commentToDelete != nil }, set: { if !$0 { commentToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Delete comment", role: .destructive) {
+                if let comment = commentToDelete {
+                    Task { await controller.deleteComment(comment) }
+                }
+                commentToDelete = nil
+            }
+            Button("Cancel", role: .cancel) { commentToDelete = nil }
         }
     }
 
@@ -932,6 +947,11 @@ struct RecipeOverviewScreen: View {
         }
     }
 
+    private func canDelete(_ comment: RecipeComment) -> Bool {
+        guard let me = auth.currentUser else { return false }
+        return comment.authorId == me.id || me.role == .admin
+    }
+
     private func commentRow(_ comment: RecipeComment) -> some View {
         let author = controller.commentAuthors[comment.authorId]
         return HStack(alignment: .top, spacing: 12) {
@@ -945,6 +965,17 @@ struct RecipeOverviewScreen: View {
                     Text(comment.createdAt, format: .relative(presentation: .named))
                         .font(.outfit(size: 11))
                         .foregroundStyle(Color.charcoalPale)
+                    Spacer(minLength: 0)
+                    if canDelete(comment) {
+                        Button {
+                            commentToDelete = comment
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.charcoalPale)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 Text(comment.text)
                     .font(.outfit(size: 14))

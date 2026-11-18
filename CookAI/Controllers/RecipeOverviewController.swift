@@ -319,6 +319,19 @@ final class RecipeOverviewController {
         }
     }
 
+    // MARK: - Delete comment
+
+    /// Removes a comment (the database only allows its author or an admin).
+    func deleteComment(_ comment: RecipeComment) async {
+        commentsErrorMessage = nil
+        do {
+            try await recipeRepository.deleteComment(id: comment.id)
+            comments.removeAll { $0.id == comment.id }
+        } catch {
+            commentsErrorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Delete (owner)
 
     private(set) var isDeleting = false
